@@ -5,22 +5,54 @@ enum CandidateStatus {
   COMPLETED
 }
 
-/// A candidate attached to an assessment. The assessment list's candidate
-/// count is a live COUNT over these rows, so it always reflects current
-/// records — adding or removing a candidate changes the count immediately.
+/// Whether a candidate assignment uses the assessment's shared approved question
+/// set, or a fresh AI-generated candidate-specific set (which needs HR approval
+/// before a link can be generated).
+enum CandidateQuestionSource {
+  SHARED
+  FRESH
+}
+
+/// A candidate assignment for an assessment. Holds the candidate's details, the
+/// chosen question-set source, the retained assessment version, and the two
+/// independent approvals (questions + timer) required before link generation.
 model Candidate {
   id           Int             @id @default(autoincrement())
   assessmentId Int             @map("assessment_id")
   name         String
   email        String
+  phone        String?
   status       CandidateStatus @default(INVITED)
+
+  // Assignment: question-set source + retained assessment version (snapshot)
+  questionSource          CandidateQuestionSource @default(SHARED) @map("question_source")
+  assessmentVersionId     Int?                    @map("assessment_version_id") // retained version (index only, no FK)
+  assessmentVersionNumber Int?                    @map("assessment_version_number")
+
+  // Candidate-question approval (fresh sets need HR review before link generation)
+  questionsApproved     Boolean   @default(false) @map("questions_approved")
+  questionsApprovedAt   DateTime? @map("questions_approved_at")
+  questionsApprovedById Int?      @map("questions_approved_by_id")
+
+  // Independent timer approval (with note + approved duration in seconds)
+  timerApproved        Boolean   @default(false) @map("timer_approved")
+  timerApprovalNote    String?   @map("timer_approval_note") @db.Text
+  timerApprovedSeconds Int?      @map("timer_approved_seconds")
+  timerApprovedAt      DateTime? @map("timer_approved_at")
+  timerApprovedById    Int?      @map("timer_approved_by_id")
+
+  // Access link (generated only after both approvals)
+  accessToken     String?   @unique @map("access_token")
+  linkGeneratedAt DateTime? @map("link_generated_at")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  assessment Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  assessment Assessment          @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  questions  CandidateQuestion[]
 
   @@unique([assessmentId, email])
   @@index([assessmentId])
+  @@index([assessmentVersionId])
   @@map("candidates")
 }

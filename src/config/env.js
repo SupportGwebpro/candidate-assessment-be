@@ -12,6 +12,10 @@ const env = {
   port: parseInt(process.env.PORT || '4000', 10),
   nodeEnv: process.env.NODE_ENV || 'development',
   corsOrigin: process.env.CORS_ORIGIN || '*',
+  // Number of trusted proxy hops in front of the app (nginx = 1). Lets Express
+  // derive the real client IP from X-Forwarded-For so the rate limiter keys by
+  // client, not by the proxy. 0 disables proxy trust (direct exposure).
+  trustProxy: process.env.TRUST_PROXY !== undefined ? Number(process.env.TRUST_PROXY) : 1,
 
   databaseUrl: required('DATABASE_URL'),
 
@@ -40,6 +44,9 @@ const env = {
   upload: {
     maxBytes: parseInt(process.env.UPLOAD_MAX_BYTES || '10485760', 10), // 10 MB
   },
+
+  // Base URL used to build the candidate assessment link from the access token.
+  candidateLinkBaseUrl: process.env.CANDIDATE_LINK_BASE_URL || '',
 };
 
 module.exports = env;

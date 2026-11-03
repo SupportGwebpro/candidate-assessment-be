@@ -279,8 +279,11 @@ async function listSections(id) {
   return prisma.assessmentSection.findMany({ where: { assessmentId: id }, orderBy: { order: 'asc' } });
 }
 
-//--- Step 3: Assessment Access -------------------------------------------------------
+// --- Step 3: assessment access ----------------------------------------------
 
+/// Configure the access step: open/close window, timezone, eligibility
+/// threshold (percentage) and save-and-resume. Validates the open/close window
+/// against stored values too, so a partial update can't leave closesAt <= opensAt.
 async function setAccess(id, data, adminId) {
   const existing = await findOrThrow(id);
   ensureEditable(existing);
@@ -451,24 +454,8 @@ async function listVersions(id) {
   });
 }
 
-/// Candidate helpers — kept minimal, they exist so the list's candidate counts
-/// can be exercised and verified as current.
-async function addCandidate(id, data) {
-  await findOrThrow(id);
-  const candidate = await prisma.candidate.create({
-    data: { assessmentId: id, name: data.name, email: data.email, status: data.status || 'INVITED' },
-  });
-  const candidateCount = await prisma.candidate.count({ where: { assessmentId: id } });
-  return { candidate, candidateCount };
-}
-
-async function listCandidates(id) {
-  await findOrThrow(id);
-  return prisma.candidate.findMany({
-    where: { assessmentId: id },
-    orderBy: { createdAt: 'desc' },
-  });
-}
+// Candidate logic moved to candidate.service.js (assignment module). The
+// Candidate relation still backs the list's candidateCount via _count.
 
 module.exports = {
   list,
@@ -489,6 +476,4 @@ module.exports = {
   archive,
   restore,
   listVersions,
-  addCandidate,
-  listCandidates,
 };

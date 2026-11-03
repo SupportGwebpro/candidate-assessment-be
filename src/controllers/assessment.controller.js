@@ -41,15 +41,7 @@ const listVersions = asyncHandler(async (req, res) => {
   res.json({ data: versions });
 });
 
-const addCandidate = asyncHandler(async (req, res) => {
-  const result = await service.addCandidate(req.params.id, req.body);
-  res.status(201).json({ data: result });
-});
-
-const listCandidates = asyncHandler(async (req, res) => {
-  const candidates = await service.listCandidates(req.params.id);
-  res.json({ data: candidates });
-});
+// Candidate endpoints moved to candidate.controller.js (assignment module).
 
 // --- Wizard step 1: job-description upload ---
 const uploadJobDescription = asyncHandler(async (req, res) => {
@@ -90,7 +82,7 @@ const listSections = asyncHandler(async (req, res) => {
   res.json({ data: sections });
 });
 
-// --- Wizard step 3: Assessment Access ---
+// --- Wizard step 3: assessment access ---
 const setAccess = asyncHandler(async (req, res) => {
   const assessment = await service.setAccess(req.params.id, req.body, req.admin.id);
   res.json({ data: assessment });
@@ -126,6 +118,4 @@ module.exports = {
   archive,
   restore,
   listVersions,
-  addCandidate,
-  listCandidates,
 };

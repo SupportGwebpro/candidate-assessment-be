@@ -9,7 +9,6 @@ const {
   updateAssessmentSchema,
   actionSchema,
   listQuerySchema,
-  addCandidateSchema,
   aiSkillsSchema,
   aiSectionsSchema,
   saveSkillsSchema,
@@ -21,6 +20,10 @@ const {
 // Blueprint editing & approvals module (additive — does not alter the routes above).
 const bp = require('../controllers/blueprint.controller');
 const bpv = require('../validators/blueprint.validator');
+
+// Candidate assignment module.
+const cand = require('../controllers/candidate.controller');
+const candv = require('../validators/candidate.validator');
 
 const router = express.Router();
 
@@ -61,9 +64,24 @@ router.post('/:id/restore', validate(actionSchema), controller.restore);
 // Version history
 router.get('/:id/versions', validate(idParam), controller.listVersions);
 
-// Candidates (keep list counts current)
-router.get('/:id/candidates', validate(idParam), controller.listCandidates);
-router.post('/:id/candidates', validate(addCandidateSchema), controller.addCandidate);
+// === Candidate assignment =================================================
+// Create assignment (modified "add candidate": name/email/phone + question source,
+// approved-set snapshot or fresh AI set, retained version) and list/detail.
+router.get('/:id/candidates', validate(candv.listCandidatesSchema), cand.list);
+router.post('/:id/candidates', validate(candv.createAssignmentSchema), cand.create);
+router.get('/:id/candidates/:candidateId', validate(candv.candidateParam), cand.getOne);
+
+// Candidate question review (fresh sets need approval before link generation)
+router.get('/:id/candidates/:candidateId/questions', validate(candv.candidateParam), cand.listQuestions);
+router.patch('/:id/candidates/:candidateId/questions/:cqId', validate(candv.updateCandidateQuestionSchema), cand.updateQuestion);
+router.post('/:id/candidates/:candidateId/questions/regenerate', validate(candv.candidateParam), cand.regenerateQuestions);
+router.post('/:id/candidates/:candidateId/questions/approve', validate(candv.candidateParam), cand.approveQuestions);
+
+// Independent timer approval (with note) for the assignment
+router.patch('/:id/candidates/:candidateId/timer-approval', validate(candv.timerApprovalSchema), cand.setTimerApproval);
+
+// Generate the access link (requires questions + timer approvals)
+router.post('/:id/candidates/:candidateId/link', validate(candv.candidateParam), cand.generateLink);
 
 // NOTE: there is intentionally no DELETE route. Removal is done via archive,
 // which is reversible via restore — no permanent deletion is exposed.

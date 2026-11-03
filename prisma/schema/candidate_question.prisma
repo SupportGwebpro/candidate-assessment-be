@@ -1,0 +1,29 @@
+/// A question retained for a specific candidate assignment — a snapshot, so the
+/// assignment keeps its exact question set regardless of later blueprint edits.
+/// SHARED assignments copy the assessment's approved questions here (approved);
+/// FRESH assignments store AI-generated candidate-specific questions that start
+/// unapproved and need HR review. Reuses QuestionType / Difficulty enums.
+model CandidateQuestion {
+  id          Int          @id @default(autoincrement())
+  candidateId Int          @map("candidate_id")
+  sectionName String       @map("section_name")
+  type        QuestionType
+  prompt      String       @db.Text
+  options     Json?
+  correctOption Int?       @map("correct_option")
+  modelAnswer String?      @map("model_answer") @db.Text
+  evaluationRubric String? @map("evaluation_rubric") @db.Text
+  marks       Int?
+  difficulty  Difficulty?
+  estimatedTimeSeconds Int? @map("estimated_time_seconds")
+  approved    Boolean      @default(false)
+  order       Int          @default(0)
+  sourceQuestionId Int?    @map("source_question_id") // origin blueprint question (SHARED copies)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  candidate Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  @@index([candidateId])
+  @@map("candidate_questions")
+}

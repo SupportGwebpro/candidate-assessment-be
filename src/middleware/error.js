@@ -32,6 +32,29 @@ const errorHandler = (err, req, res, next) => {
     });
   }
 
+  // express.json() / body-parser errors — map to the right client-error status
+  // instead of a generic 500.
+  if (err.type === 'entity.too.large') {
+    return res.status(413).json({
+      error: { message: 'Request body too large', code: 'PAYLOAD_TOO_LARGE' },
+    });
+  }
+  if (err.type === 'entity.parse.failed' || (err instanceof SyntaxError && 'body' in err)) {
+    return res.status(400).json({
+      error: { message: 'Malformed JSON in request body', code: 'INVALID_JSON' },
+    });
+  }
+  // Other body-parser failures (unsupported charset/encoding, aborted request, …)
+  // carry their own 4xx status and an entity.*/request.* type.
+  if (typeof err.type === 'string' && (err.status || err.statusCode)) {
+    const status = err.status || err.statusCode;
+    if (status >= 400 && status < 500) {
+      return res.status(status).json({
+        error: { message: 'Invalid request', code: 'BAD_REQUEST' },
+      });
+    }
+  }
+
   console.error('[unhandled error]', err);
   res.status(500).json({
     error: { message: 'Internal server error', code: 'INTERNAL_ERROR' },

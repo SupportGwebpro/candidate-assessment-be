@@ -21,14 +21,13 @@ async function main() {
     return;
   }
 
-  // Frontend role — create, publish, add candidates.
+  // Frontend role — create + publish. (Candidate assignments are created via the
+  // assignment API once a blueprint is generated and approved.)
   const frontend = await assessmentService.create(
     { name: 'Frontend Engineer Screen', role: 'Frontend Engineer', level: 'MID', durationMinutes: 60, changeNote: 'Initial draft' },
     admin.id
   );
   await assessmentService.publish(frontend.id, admin.id, 'Ready for candidates');
-  await assessmentService.addCandidate(frontend.id, { name: 'Asha Rao', email: 'asha@example.com', status: 'INVITED' });
-  await assessmentService.addCandidate(frontend.id, { name: 'Ben Cole', email: 'ben@example.com', status: 'IN_PROGRESS' });
 
   // Backend role — kept as a draft.
   await assessmentService.create(
@@ -44,7 +43,7 @@ async function main() {
   await assessmentService.publish(qa.id, admin.id);
   await assessmentService.archive(qa.id, admin.id, 'Role on hold');
 
-  console.log('Sample assessments, versions and candidates created.');
+  console.log('Sample assessments and versions created.');
 }
 
 main()
