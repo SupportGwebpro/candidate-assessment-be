@@ -24,8 +24,8 @@ const env = {
   bcryptRounds: parseInt(process.env.BCRYPT_ROUNDS || '10', 10),
 
   seedAdmin: {
-    email: process.env.SEED_ADMIN_EMAIL || 'admin@example.com',
-    password: process.env.SEED_ADMIN_PASSWORD || 'Admin@12345',
+    email: process.env.SEED_ADMIN_EMAIL || 'admin@gmail.com',
+    password: process.env.SEED_ADMIN_PASSWORD || 'admin@321',
     name: process.env.SEED_ADMIN_NAME || 'HR Admin',
   },
 
