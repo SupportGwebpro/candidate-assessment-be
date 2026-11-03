@@ -1,0 +1,52 @@
+/// Format of a single generated question.
+enum QuestionType {
+  MCQ
+  WRITTEN
+}
+
+/// Relative difficulty of a question (HR-editable).
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+/// A question in the generated blueprint draft (wizard step 4). Produced by the
+/// AI per section according to that section's configuration. For MCQ questions
+/// `options` holds the choices (JSON array) and `correctOption` the index of the
+/// correct one; for WRITTEN questions `modelAnswer` holds the reference answer.
+model AssessmentQuestion {
+  id            Int          @id @default(autoincrement())
+  assessmentId  Int          @map("assessment_id")
+  sectionId     Int          @map("section_id")
+  type          QuestionType
+  prompt        String       @db.Text
+  options       Json?
+  correctOption Int?         @map("correct_option")
+  modelAnswer   String?      @map("model_answer") @db.Text
+
+    // HR-editable scoring/metadata
+  evaluationRubric     String?     @map("evaluation_rubric") @db.Text
+  marks                Int?
+  difficulty           Difficulty?
+  estimatedTimeSeconds Int?        @map("estimated_time_seconds")
+
+  order         Int          @default(0)
+
+  // Question approval (independent of the overall timer approval). Any edit or
+  // regeneration of this question resets approved to false.
+  approved     Boolean   @default(false)
+  approvedAt   DateTime? @map("approved_at")
+  approvedById Int?      @map("approved_by_id") // HR admin id (index only, no FK)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  assessment Assessment        @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  section    AssessmentSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+
+  @@index([assessmentId])
+  @@index([sectionId])
+  @@index([approved])
+  @@map("assessment_questions")
+}

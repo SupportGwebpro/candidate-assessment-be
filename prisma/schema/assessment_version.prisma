@@ -1,0 +1,32 @@
+/// Immutable snapshot of an assessment captured on every meaningful change
+/// (create, edit, publish, archive, restore). Powers the "accessible version
+/// details" in the list/detail views. Never updated or deleted — a new row is
+/// appended each time, so the full history stays discoverable.
+model AssessmentVersion {
+  id            Int    @id @default(autoincrement())
+  assessmentId  Int    @map("assessment_id")
+  versionNumber Int    @map("version_number")
+
+  // Snapshot of the assessment fields at this version.
+  name            String
+  role            String
+  level           Level?
+  status          AssessmentStatus
+  durationMinutes Int?   @map("duration_minutes")
+
+  // What produced this version, e.g. "CREATE", "EDIT", "PUBLISH",
+  // "ARCHIVE", "RESTORE", plus an optional human note.
+  action    String
+  changeNote String? @map("change_note") @db.Text
+
+  createdById Int     @map("created_by_id")
+  createdBy   HrAdmin @relation("VersionCreatedBy", fields: [createdById], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  assessment Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+
+  @@unique([assessmentId, versionNumber])
+  @@index([assessmentId])
+  @@map("assessment_versions")
+}

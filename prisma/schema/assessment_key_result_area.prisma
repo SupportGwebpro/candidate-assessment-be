@@ -1,0 +1,16 @@
+/// A key result area (KRA) for an assessment's role (HR-editable). Stored as a
+/// replace-set. Each KRA has a title and an optional description.
+model AssessmentKeyResultArea {
+  id           Int     @id @default(autoincrement())
+  assessmentId Int     @map("assessment_id")
+  title        String
+  description  String? @db.Text
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  assessment Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+
+  @@unique([assessmentId, title])
+  @@index([assessmentId])
+  @@map("assessment_key_result_areas")
+}

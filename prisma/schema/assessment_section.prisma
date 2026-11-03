@@ -1,0 +1,35 @@
+/// Which question formats a section uses (wizard step 2).
+enum SectionQuestionType {
+  MCQ_ONLY
+  WRITTEN_ONLY
+  BOTH
+}
+
+/// An editable assessment section (e.g. Quantitative, Communication, Logical).
+/// Sections are first proposed by the AI from the role title + job description,
+/// then the HR Admin edits/saves them. mcqCount / writtenCount drive how many
+/// questions the blueprint generates per format:
+///   MCQ_ONLY     -> mcqCount MCQs
+///   WRITTEN_ONLY -> writtenCount written questions
+///   BOTH         -> mcqCount MCQs + writtenCount written questions
+model AssessmentSection {
+  id           Int                 @id @default(autoincrement())
+  assessmentId Int                 @map("assessment_id")
+  name         String
+  questionType SectionQuestionType @map("question_type")
+  mcqCount     Int                 @default(0) @map("mcq_count")
+  writtenCount Int                 @default(0) @map("written_count")
+  aiGuidance   String?             @map("ai_guidance") @db.Text
+  instructions String?             @db.Text
+  cutoff       Int? // section cutoff (passing score/percentage, HR convention)
+  order        Int                 @default(0)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  assessment Assessment           @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  questions  AssessmentQuestion[]
+
+  @@index([assessmentId])
+  @@map("assessment_sections")
+}

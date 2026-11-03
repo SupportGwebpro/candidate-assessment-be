@@ -1,0 +1,17 @@
+/// A skill selected for an assessment (wizard step 2). The AI suggests skills
+/// from the role title + job description; only the ones the HR Admin keeps are
+/// persisted here. AI suggestions themselves are returned by the generate
+/// endpoint and are not stored until selected.
+model AssessmentSkill {
+  id           Int    @id @default(autoincrement())
+  assessmentId Int    @map("assessment_id")
+  name         String
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  assessment Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+
+  @@unique([assessmentId, name])
+  @@index([assessmentId])
+  @@map("assessment_skills")
+}

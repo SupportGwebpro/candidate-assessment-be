@@ -1,0 +1,26 @@
+/// Where a candidate is in the assessment flow.
+enum CandidateStatus {
+  INVITED
+  IN_PROGRESS
+  COMPLETED
+}
+
+/// A candidate attached to an assessment. The assessment list's candidate
+/// count is a live COUNT over these rows, so it always reflects current
+/// records — adding or removing a candidate changes the count immediately.
+model Candidate {
+  id           Int             @id @default(autoincrement())
+  assessmentId Int             @map("assessment_id")
+  name         String
+  email        String
+  status       CandidateStatus @default(INVITED)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  assessment Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+
+  @@unique([assessmentId, email])
+  @@index([assessmentId])
+  @@map("candidates")
+}

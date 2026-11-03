@@ -1,0 +1,13 @@
+// Base schema file: datasource + generator only.
+// Models live in their own files in this folder (hr_admin.prisma,
+// assessment.prisma, assessment_version.prisma, candidate.prisma).
+// Multi-file schema folders are GA since Prisma 6.7 — no preview flag needed.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}

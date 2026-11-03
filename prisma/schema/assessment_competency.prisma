@@ -1,0 +1,15 @@
+/// A competency associated with an assessment's role (HR-editable). Stored as a
+/// replace-set, mirroring assessment_skills.
+model AssessmentCompetency {
+  id           Int    @id @default(autoincrement())
+  assessmentId Int    @map("assessment_id")
+  name         String
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  assessment Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+
+  @@unique([assessmentId, name])
+  @@index([assessmentId])
+  @@map("assessment_competencies")
+}

@@ -1,0 +1,18 @@
+/// HR Admin accounts. Provisioned through the backend (seed script or the
+/// protected POST /api/auth/admins endpoint) — there is no public sign-up.
+/// All HR Admins have equivalent access to every assessment action.
+model HrAdmin {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  name         String
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Audit back-references (who created each record / version).
+  createdAssessments Assessment[]        @relation("AssessmentCreatedBy")
+  authoredVersions   AssessmentVersion[] @relation("VersionCreatedBy")
+
+  @@map("hr_admins")
+}

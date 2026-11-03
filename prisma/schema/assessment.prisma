@@ -1,0 +1,77 @@
+/// Experience level the assessment targets (wizard step 2).
+enum Level {
+  JUNIOR
+  MID
+  SENIOR
+}
+
+/// Lifecycle status. No "deleted" state exists — archiving is reversible and
+/// there is no permanent-deletion path anywhere in the API.
+enum AssessmentStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+/// An assessment, built through the 4-step creation wizard:
+///   Step 1 Role Details    — name/role (role title) + job description (typed or extracted from an upload)
+///   Step 2 Skills & Scope  — level, selected skills, editable sections, candidate instructions
+///   Step 3 Access          — opens/closes window, timezone, eligibility threshold, save & resume
+///   Step 4 Review&Generate — AI blueprint (section-wise questions)
+/// level and durationMinutes are nullable because a draft is filled in
+/// progressively across the wizard steps.
+model Assessment {
+  id              Int              @id @default(autoincrement())
+  name            String
+  role            String
+  level           Level?
+  status          AssessmentStatus @default(DRAFT)
+  durationMinutes Int?             @map("duration_minutes")
+
+  // Step 1 — Role Details
+  jobDescription         String? @map("job_description") @db.Text
+  jobDescriptionFileName String? @map("job_description_file_name")
+
+  // Step 2 — Skills & Scope
+  candidateInstructions String? @map("candidate_instructions") @db.Text
+
+  // Step 3 — Assessment Access
+  opensAt              DateTime? @map("opens_at")
+  closesAt             DateTime? @map("closes_at")
+  timezone             String?
+  eligibilityThreshold Int?      @map("eligibility_threshold")
+  saveAndResume        Boolean   @default(false) @map("save_and_resume")
+
+  // Step 4 — Review & Generate
+  blueprintGeneratedAt DateTime? @map("blueprint_generated_at")
+
+  // Overall timer approval (independent of per-question approvals). Changing the
+  // overall timer (durationMinutes) via the timer endpoint resets this.
+  timerApproved     Boolean   @default(false) @map("timer_approved")
+  timerApprovedAt   DateTime? @map("timer_approved_at")
+  timerApprovedById Int?      @map("timer_approved_by_id") // HR admin id (index only, no FK)
+
+  publishedAt DateTime? @map("published_at")
+  archivedAt  DateTime? @map("archived_at")
+
+  createdById Int     @map("created_by_id")
+  createdBy   HrAdmin @relation("AssessmentCreatedBy", fields: [createdById], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  versions   AssessmentVersion[]
+  candidates Candidate[]
+  skills     AssessmentSkill[]
+  sections   AssessmentSection[]
+  questions  AssessmentQuestion[]
+  competencies   AssessmentCompetency[]
+  keyResultAreas AssessmentKeyResultArea[]
+
+  // Indexes that back the search / filter / sort on the list view.
+  @@index([status])
+  @@index([level])
+  @@index([role])
+  @@index([createdById])
+  @@map("assessments")
+}
