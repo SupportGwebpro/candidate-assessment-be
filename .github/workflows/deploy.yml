@@ -1,0 +1,112 @@
+name: Deploy Assessment Node App
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    env:
+      # Dummy values: the health check doesn't touch the database or the AI.
+      DATABASE_URL: mysql://ci:ci@127.0.0.1:3306/ci
+      JWT_SECRET: ci-only-secret
+      NODE_ENV: test
+      AI_MOCK: 'true'
+      PORT: '4000'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate Prisma schema & generate client
+        run: npx prisma validate && npx prisma generate
+
+      - name: Smoke test (server boots and /api/health responds)
+        run: |
+          node src/server.js > server.log 2>&1 &
+          for i in $(seq 1 20); do
+            if curl -fsS http://127.0.0.1:4000/api/health; then echo; exit 0; fi
+            sleep 1
+          done
+          echo "Server did not become healthy:"; cat server.log; exit 1
+
+  deploy:
+    needs: ci
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set target directory based on branch
+        id: set-target
+        run: |
+          echo "TARGET_DIR=/home/sdg-admin/candidate_assessment_dev/candidate-assessment-be" >> $GITHUB_ENV
+
+      - name: Sync project files to server
+        uses: easingthemes/ssh-deploy@v5.0.3
+        with:
+          SSH_PRIVATE_KEY: ${{ secrets.SERVER_SSH_KEY }}
+          ARGS: "-rlgoDzvc -i --delete"
+          SOURCE: "./"
+          REMOTE_HOST: ${{ secrets.SERVER_IP }}
+          REMOTE_USER: ${{ secrets.SERVER_USER }}
+          TARGET: ${{ env.TARGET_DIR }}
+          EXCLUDE: "/node_modules/, /.git/, /.env"
+
+      - name: Install dependencies & restart app
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            # 0. Stop script immediately if any command fails
+            set -e
+
+            # 1. Target directory
+            TARGET_DIR=/home/sdg-admin/candidate_assessment_dev/candidate-assessment-be
+
+            # 2. Load NVM explicitly
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+
+            # 3. Ensure Node v24 is used
+            nvm use 24
+
+            # 4. Check for PM2, install globally if missing
+            command -v pm2 || npm install -g pm2
+
+            # 5. Navigate to the correct directory
+            cd $TARGET_DIR
+
+            # 6. Install ALL dependencies (dev needed for Prisma CLI)
+            npm ci
+
+            # 7. Run the build script (Prisma deploy & generate)
+            npm run build
+
+            # 8. Reload PM2 (NODE_ENV is left to the server's .env)
+            pm2 reload assessment-api --update-env
+
+            # 9. Save PM2 state
+            pm2 save
+
+            # 10. Health check
+            for i in $(seq 1 30); do
+              if curl -fsS http://127.0.0.1:4000/api/health; then echo; exit 0; fi
+              sleep 1
+            done
+            pm2 logs assessment-api --lines 40 --nostream || true
+            echo "Health check failed"; exit 1
