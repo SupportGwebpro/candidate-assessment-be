@@ -24,9 +24,9 @@ const env = {
   bcryptRounds: parseInt(process.env.BCRYPT_ROUNDS || '10', 10),
 
   seedAdmin: {
-    email: process.env.SEED_ADMIN_EMAIL || 'admin@gmail.com',
-    password: process.env.SEED_ADMIN_PASSWORD || 'admin@321',
-    name: process.env.SEED_ADMIN_NAME || 'HR Admin',
+    email: process.env.SEED_ADMIN_EMAIL,
+    password: process.env.SEED_ADMIN_PASSWORD,
+    name: process.env.SEED_ADMIN_NAME,
   },
 
   // DeepSeek (OpenAI-compatible). deepseek-chat was deprecated 2026-07-24;
