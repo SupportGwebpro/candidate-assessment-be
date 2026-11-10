@@ -123,6 +123,26 @@ async function setQuestionApproval(id, questionId, approved, adminId) {
   });
 }
 
+/// Approve / unapprove EVERY question in the assessment at once. Returns the
+/// approvals summary so the caller sees the resulting counts and readiness.
+async function setAllQuestionsApproval(id, approved, adminId) {
+  const a = await findAssessment(id);
+  ensureEditable(a);
+
+  const total = await prisma.assessmentQuestion.count({ where: { assessmentId: id } });
+  if (total === 0) throw conflict('This assessment has no blueprint questions to approve');
+
+  await prisma.assessmentQuestion.updateMany({
+    where: { assessmentId: id },
+    data: {
+      approved,
+      approvedAt: approved ? new Date() : null,
+      approvedById: approved ? adminId : null,
+    },
+  });
+  return getApprovals(id);
+}
+
 // --- sections --------------------------------------------------------------
 
 async function addSection(id, data, adminId) {
@@ -312,6 +332,7 @@ module.exports = {
   deleteQuestion,
   regenerateQuestion,
   setQuestionApproval,
+  setAllQuestionsApproval,
   addSection,
   updateSection,
   deleteSection,

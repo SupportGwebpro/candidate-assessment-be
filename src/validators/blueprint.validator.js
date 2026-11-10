@@ -90,6 +90,12 @@ const questionApprovalSchema = {
   body: z.object({ approved: boolish }),
 };
 
+// Bulk approve/unapprove every question in the assessment.
+const questionsApprovalSchema = {
+  ...assessmentParam,
+  body: z.object({ approved: boolish }),
+};
+
 // --- sections ---
 const sectionBody = z.object({
   name: z.string().trim().min(1, 'Section name is required').max(120),
@@ -173,6 +179,7 @@ module.exports = {
   addQuestionSchema,
   updateQuestionSchema,
   questionApprovalSchema,
+  questionsApprovalSchema,
   addSectionSchema,
   updateSectionSchema,
   timerSchema,

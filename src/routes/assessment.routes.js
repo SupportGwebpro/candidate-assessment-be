@@ -93,6 +93,7 @@ router.post('/:id/sections/:sectionId/questions', validate(bpv.addQuestionSchema
 router.patch('/:id/questions/:questionId', validate(bpv.updateQuestionSchema), bp.updateQuestion);
 router.delete('/:id/questions/:questionId', validate(bpv.questionParam), bp.deleteQuestion);
 router.post('/:id/questions/:questionId/regenerate', validate(bpv.questionParam), bp.regenerateQuestion);
+router.patch('/:id/allquestions/approval', validate(bpv.questionsApprovalSchema), bp.setAllQuestionsApproval);
 router.patch('/:id/questions/:questionId/approval', validate(bpv.questionApprovalSchema), bp.setQuestionApproval);
 
 // Sections (granular add/edit/delete/regenerate — complements PUT /:id/sections)

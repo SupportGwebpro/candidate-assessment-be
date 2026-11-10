@@ -22,6 +22,10 @@ const setQuestionApproval = asyncHandler(async (req, res) => {
   const q = await service.setQuestionApproval(Number(req.params.id), Number(req.params.questionId), req.body.approved, req.admin.id);
   res.json({ data: q });
 });
+const setAllQuestionsApproval = asyncHandler(async (req, res) => {
+  const summary = await service.setAllQuestionsApproval(Number(req.params.id), req.body.approved, req.admin.id);
+  res.json({ data: summary });
+});
 
 // sections
 const addSection = asyncHandler(async (req, res) => {
@@ -76,6 +80,7 @@ module.exports = {
   deleteQuestion,
   regenerateQuestion,
   setQuestionApproval,
+  setAllQuestionsApproval,
   addSection,
   updateSection,
   deleteSection,
