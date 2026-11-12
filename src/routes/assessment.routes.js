@@ -112,6 +112,18 @@ router.put('/:id/competencies', validate(bpv.saveCompetenciesSchema), bp.saveCom
 router.get('/:id/key-result-areas', validate(bpv.assessmentParam), bp.listKeyResultAreas);
 router.put('/:id/key-result-areas', validate(bpv.saveKeyResultAreasSchema), bp.saveKeyResultAreas);
 
+// Read-aloud final task
+router.get('/:id/reading-task', validate(bpv.assessmentParam), bp.getReadingTask);
+router.put('/:id/reading-task', validate(bpv.updateReadingTaskSchema), bp.updateReadingTask);
+router.post('/:id/reading-task/generate-passage', validate(bpv.generatePassageSchema), bp.generateReadingPassage);
+router.patch('/:id/reading-task/approval', validate(bpv.readingApprovalSchema), bp.setReadingTaskApproval);
+
+// Speaking final task
+router.get('/:id/speaking-task', validate(bpv.assessmentParam), bp.getSpeakingTask);
+router.put('/:id/speaking-task', validate(bpv.updateSpeakingTaskSchema), bp.updateSpeakingTask);
+router.post('/:id/speaking-task/generate-topic', validate(bpv.generateTopicSchema), bp.generateSpeakingTopic);
+router.patch('/:id/speaking-task/approval', validate(bpv.speakingApprovalSchema), bp.setSpeakingTaskApproval);
+
 // Approval summary (timer + per-question / per-section counts)
 router.get('/:id/approvals', validate(bpv.assessmentParam), bp.getApprovals);
 

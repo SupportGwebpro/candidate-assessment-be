@@ -166,10 +166,81 @@ async function generateQuestion({ roleTitle, jobDescription, level, skills = [],
   return type === 'MCQ' ? mcqs[0] || null : written[0] || null;
 }
 
+/// Suggest a read-aloud window from passage length (~84 wpm read-aloud pace),
+/// clamped to 30–600s. Deterministic, so the UI's "matches AI suggests" is stable.
+function computeReadingWindow(passage) {
+  const words = String(passage || '').trim().split(/\s+/).filter(Boolean).length;
+  const seconds = Math.round(words / 1.4);
+  return Math.min(600, Math.max(30, seconds || 30));
+}
+
+/// Generate (or reframe) a short passage for the read-aloud task, plus a
+/// suggested reading window. Returns { passage, suggestedWindowSeconds }.
+async function generateReadingPassage({ roleTitle, jobDescription, level, skills = [], mode = 'generate', currentPassage }) {
+  if (useMock()) {
+    const roleLabel = [level ? level.toLowerCase() : '', roleTitle].filter(Boolean).join(' ').trim() || 'professional';
+    const passage =
+      mode === 'reframe' && currentPassage
+        ? `In this role, you turn complex information into clear recommendations. ${String(currentPassage).replace(/\s+/g, ' ').trim().slice(0, 500)}`
+        : `As a ${roleLabel}, you help teams make informed decisions by turning complex information into clear recommendations. In this role, you work with stakeholders to understand their needs, analyse data carefully, and communicate your findings in plain language so that everyone can act with confidence.`;
+    return { passage, suggestedWindowSeconds: computeReadingWindow(passage) };
+  }
+
+  const system =
+    'You write a short passage for a candidate to read aloud in an assessment. ' +
+    'Respond ONLY with JSON {"passage": string}. 60-120 words, clear and professional, ' +
+    'relevant to the role. No prose, no markdown.';
+  const user =
+    `Role: ${roleTitle}\nLevel: ${level || 'unspecified'}\n` +
+    `Skills: ${skills.length ? skills.join(', ') : '(unspecified)'}\n` +
+    `Job description:\n${jdSnippet(jobDescription)}\n\n` +
+    (mode === 'reframe' && currentPassage
+      ? `Reframe this passage, keeping the topic but improving clarity and flow:\n${currentPassage}\n\n`
+      : '') +
+    'Return {"passage": "..."}.';
+
+  const data = await chatJSON({ system, user, temperature: mode === 'reframe' ? 0.5 : 0.7 });
+  const passage = typeof data.passage === 'string' ? data.passage.trim() : '';
+  return { passage, suggestedWindowSeconds: computeReadingWindow(passage) };
+}
+
+const DEFAULT_SPEAKING_WINDOW = 300;
+const clampSpeakingWindow = (s) => Math.min(600, Math.max(90, Math.round(s) || DEFAULT_SPEAKING_WINDOW));
+
+async function generateSpeakingTopic({ roleTitle, jobDescription, level, skills = [], mode = 'generate', currentTopic }) {
+  if (useMock()) {
+    const roleLabel = [level ? level.toLowerCase() : '', roleTitle].filter(Boolean).join(' ').trim() || 'professional';
+    const topic =
+      mode === 'reframe' && currentTopic
+        ? `Speak to this prompt in your own words: ${String(currentTopic).replace(/\s+/g, ' ').trim().slice(0, 500)}`
+        : `You are a ${roleLabel} supporting a company that has seen a sudden increase in customer complaints. Explain how you would investigate the root causes, what information you would gather, and how you would present your recommendations to stakeholders.`;
+    return { topic, suggestedWindowSeconds: DEFAULT_SPEAKING_WINDOW };
+  }
+  const system =
+    'You write a short speaking-task prompt for a candidate to speak about in an assessment. ' +
+    'Respond ONLY with JSON {"topic": string}. 1-3 sentences, a realistic scenario relevant to ' +
+    'the role that invites 1-5 minutes of spoken response. No prose, no markdown.';
+  const user =
+    `Role: ${roleTitle}\nLevel: ${level || 'unspecified'}\n` +
+    `Skills: ${skills.length ? skills.join(', ') : '(unspecified)'}\n` +
+    `Job description:\n${jdSnippet(jobDescription)}\n\n` +
+    (mode === 'reframe' && currentTopic
+      ? `Reframe this topic, keeping the intent but improving clarity:\n${currentTopic}\n\n`
+      : '') +
+    'Return {"topic": "..."}.';
+  const data = await chatJSON({ system, user, temperature: mode === 'reframe' ? 0.5 : 0.7 });
+  const topic = typeof data.topic === 'string' ? data.topic.trim() : '';
+  return { topic, suggestedWindowSeconds: clampSpeakingWindow(DEFAULT_SPEAKING_WINDOW) };
+}
+
+
 module.exports = {
   useMock,
   generateSkills,
   generateSections,
   generateSectionQuestions,
   generateQuestion,
+  generateReadingPassage,
+  computeReadingWindow,
+  generateSpeakingTopic,
 };

@@ -172,6 +172,55 @@ const saveKeyResultAreasSchema = {
   }),
 };
 
+// --- read-aloud task -------------------------------------------------------
+const updateReadingTaskSchema = {
+  ...assessmentParam,
+  body: z
+    .object({
+      passage: z.string().trim().max(10000).optional(),
+      maxMarks: z.coerce.number().int().min(1, 'maxMarks must be 1-100').max(100, 'maxMarks must be 1-100').optional(),
+      readingWindowSeconds: z.coerce.number().int().min(30, 'window must be 30-600s').max(600, 'window must be 30-600s').optional(),
+      aiSuggestedWindowSeconds: z.coerce.number().int().min(30).max(600).nullable().optional(),
+    })
+    .refine(
+      (d) => ['passage', 'maxMarks', 'readingWindowSeconds', 'aiSuggestedWindowSeconds'].some((k) => d[k] !== undefined),
+      { message: 'Provide at least one field to update' }
+    ),
+};
+const generatePassageSchema = {
+  ...assessmentParam,
+  body: z.object({ mode: z.enum(['generate', 'reframe']).default('generate') }),
+};
+const readingApprovalSchema = {
+  ...assessmentParam,
+  body: z.object({ approved: boolish }),
+};
+
+// --- speaking task ---
+const updateSpeakingTaskSchema = {
+  ...assessmentParam,
+  body: z
+    .object({
+      topic: z.string().trim().max(10000).optional(),
+      maxMarks: z.coerce.number().int().min(1, 'maxMarks must be 1-100').max(100, 'maxMarks must be 1-100').optional(),
+      speakingWindowSeconds: z.coerce.number().int().min(90, 'window must be 90-600s').max(600, 'window must be 90-600s').optional(),
+      aiSuggestedWindowSeconds: z.coerce.number().int().min(90).max(600).nullable().optional(),
+    })
+    .refine(
+      (d) => ['topic', 'maxMarks', 'speakingWindowSeconds', 'aiSuggestedWindowSeconds'].some((k) => d[k] !== undefined),
+      { message: 'Provide at least one field to update' }
+    ),
+};
+const generateTopicSchema = {
+  ...assessmentParam,
+  body: z.object({ mode: z.enum(['generate', 'reframe']).default('generate') }),
+};
+const speakingApprovalSchema = {
+  ...assessmentParam,
+  body: z.object({ approved: boolish }),
+};
+
+
 module.exports = {
   assessmentParam,
   sectionParam,
@@ -186,4 +235,10 @@ module.exports = {
   timerApprovalSchema,
   saveCompetenciesSchema,
   saveKeyResultAreasSchema,
+  updateReadingTaskSchema,
+  generatePassageSchema,
+  readingApprovalSchema,
+  updateSpeakingTaskSchema,
+  generateTopicSchema,
+  speakingApprovalSchema,
 };

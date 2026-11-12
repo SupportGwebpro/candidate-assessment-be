@@ -39,6 +39,7 @@ const listSelect = {
   _count: { select: { candidates: true, skills: true, sections: true, questions: true } },
   createdBy: { select: { id: true, name: true, email: true } },
   versions: { orderBy: { versionNumber: 'desc' }, take: 1 },
+  allowedDeviceTypes: true, cities: true, regions: true, allowSectionSwitching: true,
 };
 
 const serialize = (a) => ({
@@ -58,6 +59,10 @@ const serialize = (a) => ({
   timezone: a.timezone ?? null,
   eligibilityThreshold: a.eligibilityThreshold ?? null,
   saveAndResume: a.saveAndResume ?? false,
+  allowedDeviceTypes: a.allowedDeviceTypes ?? [],
+  cities: a.cities ?? [],
+  regions: a.regions ?? [],
+  allowSectionSwitching: a.allowSectionSwitching ?? false,
   blueprintGeneratedAt: a.blueprintGeneratedAt ?? null,
   publishedAt: a.publishedAt,
   archivedAt: a.archivedAt,

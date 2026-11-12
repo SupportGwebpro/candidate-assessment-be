@@ -41,6 +41,10 @@ model Assessment {
   timezone             String?
   eligibilityThreshold Int?      @map("eligibility_threshold")
   saveAndResume        Boolean   @default(false) @map("save_and_resume")
+  allowedDeviceTypes    Json?   @map("allowed_device_types")
+  cities                Json?
+  regions               Json?
+  allowSectionSwitching Boolean @default(false) @map("allow_section_switching")
 
   // Step 4 — Review & Generate
   blueprintGeneratedAt DateTime? @map("blueprint_generated_at")
@@ -67,6 +71,8 @@ model Assessment {
   questions  AssessmentQuestion[]
   competencies   AssessmentCompetency[]
   keyResultAreas AssessmentKeyResultArea[]
+  readingTask    AssessmentReadingTask?
+  speakingTask   AssessmentSpeakingTask?
 
   // Indexes that back the search / filter / sort on the list view.
   @@index([status])

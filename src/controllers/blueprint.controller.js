@@ -69,6 +69,31 @@ const saveKeyResultAreas = asyncHandler(async (req, res) => {
   res.json({ data: await service.saveKeyResultAreas(Number(req.params.id), req.body.keyResultAreas) });
 });
 
+const getReadingTask = asyncHandler(async (req, res) => {
+  res.json({ data: await service.getReadingTask(Number(req.params.id)) });
+});
+const updateReadingTask = asyncHandler(async (req, res) => {
+  res.json({ data: await service.updateReadingTask(Number(req.params.id), req.body, req.admin.id) });
+});
+const generateReadingPassage = asyncHandler(async (req, res) => {
+  res.json({ data: await service.generateReadingPassage(Number(req.params.id), req.body.mode) });
+});
+const setReadingTaskApproval = asyncHandler(async (req, res) => {
+  res.json({ data: await service.setReadingTaskApproval(Number(req.params.id), req.body.approved, req.admin.id) });
+});
+const getSpeakingTask = asyncHandler(async (req, res) => {
+  res.json({ data: await service.getSpeakingTask(Number(req.params.id)) });
+});
+const updateSpeakingTask = asyncHandler(async (req, res) => {
+  res.json({ data: await service.updateSpeakingTask(Number(req.params.id), req.body, req.admin.id) });
+});
+const generateSpeakingTopic = asyncHandler(async (req, res) => {
+  res.json({ data: await service.generateSpeakingTopic(Number(req.params.id), req.body.mode) });
+});
+const setSpeakingTaskApproval = asyncHandler(async (req, res) => {
+  res.json({ data: await service.setSpeakingTaskApproval(Number(req.params.id), req.body.approved, req.admin.id) });
+});
+
 // approvals summary
 const getApprovals = asyncHandler(async (req, res) => {
   res.json({ data: await service.getApprovals(Number(req.params.id)) });
@@ -91,5 +116,14 @@ module.exports = {
   saveCompetencies,
   listKeyResultAreas,
   saveKeyResultAreas,
+  getReadingTask,
+  updateReadingTask,
+  generateReadingPassage,
+  setReadingTaskApproval,
+  getSpeakingTask,
+  updateSpeakingTask,
+  generateSpeakingTopic,
+  setSpeakingTaskApproval,
   getApprovals,
+  
 };

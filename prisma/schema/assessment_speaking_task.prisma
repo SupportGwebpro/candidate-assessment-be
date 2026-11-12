@@ -1,0 +1,25 @@
+/// The "speaking" final task for an assessment (one per assessment). The
+/// candidate speaks on `topic` within `speakingWindowSeconds` (90–600s, at least
+/// 60s of speaking). HR sets the topic (optionally AI-generated), max marks and
+/// the window. Editing any of these resets `approved`. `aiSuggestedWindowSeconds`
+/// stores the window the AI last suggested (a fixed 5-minute default, independent
+/// of the topic), for the "matches AI suggests" hint.
+model AssessmentSpeakingTask {
+  id                       Int       @id @default(autoincrement())
+  assessmentId             Int       @unique @map("assessment_id")
+  topic                    String?   @db.Text
+  maxMarks                 Int?      @map("max_marks")
+  speakingWindowSeconds    Int?      @map("speaking_window_seconds")
+  aiSuggestedWindowSeconds Int?      @map("ai_suggested_window_seconds")
+
+  approved     Boolean   @default(false)
+  approvedAt   DateTime? @map("approved_at")
+  approvedById Int?      @map("approved_by_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  assessment Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+
+  @@map("assessment_speaking_tasks")
+}

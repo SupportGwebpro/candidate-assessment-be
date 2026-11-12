@@ -292,6 +292,130 @@ async function saveKeyResultAreas(id, items) {
   });
 }
 
+// --- read-aloud task -------------------------------------------------------
+const EDITABLE_READING_FIELDS = ['passage', 'maxMarks', 'readingWindowSeconds', 'aiSuggestedWindowSeconds'];
+
+async function getReadingTask(id) {
+  await findAssessment(id);
+  const t = await prisma.assessmentReadingTask.findUnique({ where: { assessmentId: id } });
+  if (t) return { ...t, configured: true };
+  return {
+    assessmentId: id, passage: null, maxMarks: null, readingWindowSeconds: null,
+    aiSuggestedWindowSeconds: null, approved: false, configured: false,
+  };
+}
+
+async function updateReadingTask(id, data, adminId) {
+  const a = await findAssessment(id);
+  ensureEditable(a);
+  const fields = {};
+  for (const k of EDITABLE_READING_FIELDS) if (data[k] !== undefined) fields[k] = data[k];
+  const existing = await prisma.assessmentReadingTask.findUnique({ where: { assessmentId: id } });
+  if (existing) {
+    return prisma.assessmentReadingTask.update({
+      where: { assessmentId: id },
+      data: { ...fields, approved: false, approvedAt: null, approvedById: null },
+    });
+  }
+  return prisma.assessmentReadingTask.create({
+    data: {
+      assessmentId: id,
+      passage: fields.passage ?? null,
+      maxMarks: fields.maxMarks ?? 10,
+      readingWindowSeconds: fields.readingWindowSeconds ?? 60,
+      aiSuggestedWindowSeconds: fields.aiSuggestedWindowSeconds ?? null,
+    },
+  });
+}
+
+async function generateReadingPassage(id, mode = 'generate') {
+  const a = await findAssessment(id);
+  let currentPassage = null;
+  if (mode === 'reframe') {
+    const t = await prisma.assessmentReadingTask.findUnique({ where: { assessmentId: id } });
+    if (!t || !t.passage) throw conflict('There is no existing passage to reframe');
+    currentPassage = t.passage;
+  }
+  const skills = (await prisma.assessmentSkill.findMany({ where: { assessmentId: id } })).map((s) => s.name);
+  const result = await ai.generateReadingPassage({
+    roleTitle: a.role, jobDescription: a.jobDescription, level: a.level, skills, mode, currentPassage,
+  });
+  return { ...result, mode, mock: ai.useMock() };
+}
+
+async function setReadingTaskApproval(id, approved, adminId) {
+  const a = await findAssessment(id);
+  ensureEditable(a);
+  const t = await prisma.assessmentReadingTask.findUnique({ where: { assessmentId: id } });
+  if (!t) throw conflict('Configure the reading task before approving it');
+  return prisma.assessmentReadingTask.update({
+    where: { assessmentId: id },
+    data: { approved, approvedAt: approved ? new Date() : null, approvedById: approved ? adminId : null },
+  });
+}
+
+// --- speaking task ---
+const EDITABLE_SPEAKING_FIELDS = ['topic', 'maxMarks', 'speakingWindowSeconds', 'aiSuggestedWindowSeconds'];
+
+async function getSpeakingTask(id) {
+  await findAssessment(id);
+  const t = await prisma.assessmentSpeakingTask.findUnique({ where: { assessmentId: id } });
+  if (t) return { ...t, configured: true };
+  return {
+    assessmentId: id, topic: null, maxMarks: null, speakingWindowSeconds: null,
+    aiSuggestedWindowSeconds: null, approved: false, configured: false,
+  };
+}
+
+async function updateSpeakingTask(id, data, adminId) {
+  const a = await findAssessment(id);
+  ensureEditable(a);
+  const fields = {};
+  for (const k of EDITABLE_SPEAKING_FIELDS) if (data[k] !== undefined) fields[k] = data[k];
+  const existing = await prisma.assessmentSpeakingTask.findUnique({ where: { assessmentId: id } });
+  if (existing) {
+    return prisma.assessmentSpeakingTask.update({
+      where: { assessmentId: id },
+      data: { ...fields, approved: false, approvedAt: null, approvedById: null },
+    });
+  }
+  return prisma.assessmentSpeakingTask.create({
+    data: {
+      assessmentId: id,
+      topic: fields.topic ?? null,
+      maxMarks: fields.maxMarks ?? 10,
+      speakingWindowSeconds: fields.speakingWindowSeconds ?? 300,
+      aiSuggestedWindowSeconds: fields.aiSuggestedWindowSeconds ?? null,
+    },
+  });
+}
+
+async function generateSpeakingTopic(id, mode = 'generate') {
+  const a = await findAssessment(id);
+  let currentTopic = null;
+  if (mode === 'reframe') {
+    const t = await prisma.assessmentSpeakingTask.findUnique({ where: { assessmentId: id } });
+    if (!t || !t.topic) throw conflict('There is no existing topic to reframe');
+    currentTopic = t.topic;
+  }
+  const skills = (await prisma.assessmentSkill.findMany({ where: { assessmentId: id } })).map((s) => s.name);
+  const result = await ai.generateSpeakingTopic({
+    roleTitle: a.role, jobDescription: a.jobDescription, level: a.level, skills, mode, currentTopic,
+  });
+  return { ...result, mode, mock: ai.useMock() };
+}
+
+async function setSpeakingTaskApproval(id, approved, adminId) {
+  const a = await findAssessment(id);
+  ensureEditable(a);
+  const t = await prisma.assessmentSpeakingTask.findUnique({ where: { assessmentId: id } });
+  if (!t) throw conflict('Configure the speaking task before approving it');
+  return prisma.assessmentSpeakingTask.update({
+    where: { assessmentId: id },
+    data: { approved, approvedAt: approved ? new Date() : null, approvedById: approved ? adminId : null },
+  });
+}
+
 // --- approvals summary -----------------------------------------------------
 
 async function getApprovals(id) {
@@ -343,5 +467,13 @@ module.exports = {
   saveCompetencies,
   listKeyResultAreas,
   saveKeyResultAreas,
+  getReadingTask,
+  updateReadingTask,
+  generateReadingPassage,
+  setReadingTaskApproval,
   getApprovals,
+  getSpeakingTask,
+  updateSpeakingTask,
+  generateSpeakingTopic,
+  setSpeakingTaskApproval,
 };

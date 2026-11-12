@@ -1,0 +1,24 @@
+/// The "read aloud" final task for an assessment (one per assessment). The
+/// candidate reads `passage` aloud within `readingWindowSeconds`; HR sets the
+/// passage (optionally AI-generated), max marks and the window. Editing any of
+/// these resets `approved` (editing removes approval). `aiSuggestedWindowSeconds`
+/// stores the window the AI last suggested, for the "matches AI suggests" hint.
+model AssessmentReadingTask {
+  id                       Int       @id @default(autoincrement())
+  assessmentId             Int       @unique @map("assessment_id")
+  passage                  String?   @db.Text
+  maxMarks                 Int?      @map("max_marks")
+  readingWindowSeconds     Int?      @map("reading_window_seconds")
+  aiSuggestedWindowSeconds Int?      @map("ai_suggested_window_seconds")
+
+  approved     Boolean   @default(false)
+  approvedAt   DateTime? @map("approved_at")
+  approvedById Int?      @map("approved_by_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  assessment Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+
+  @@map("assessment_reading_tasks")
+}

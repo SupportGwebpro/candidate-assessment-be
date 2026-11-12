@@ -28,6 +28,23 @@ const boolish = z.preprocess((v) => {
   return v;
 }, z.boolean());
 
+const DEVICE_TYPES = ['DESKTOP', 'TABLET', 'MOBILE'];
+
+const csvList = (maxLen = 120, maxItems = 200) =>
+  z
+    .preprocess(
+      (v) => (typeof v === 'string' ? v.split(',') : v),
+      z.array(z.string().trim().max(maxLen)).max(maxItems)
+    )
+    .transform((a) => [...new Set(a.map((s) => s.trim()).filter(Boolean))]);
+
+const deviceTypesField = z
+  .preprocess((v) => {
+    const arr = Array.isArray(v) ? v : typeof v === 'string' ? v.split(',') : v;
+    return Array.isArray(arr) ? arr.map((x) => (typeof x === 'string' ? x.trim().toUpperCase() : x)) : arr;
+  }, z.array(z.enum(DEVICE_TYPES)).nonempty('At least one device type is required'))
+  .transform((a) => [...new Set(a)]);
+
 // Step 1 — create the draft. Only the role title is required; everything else is
 // filled in across later wizard steps. (name defaults to the role in the service.)
 const createAssessmentSchema = {
@@ -153,7 +170,7 @@ const saveSectionsSchema = {
 };
 
 // --- Wizard step 3: Assessment Access -------------------------------------
-const ACCESS_FIELDS = ['opensAt', 'closesAt', 'timezone', 'eligibilityThreshold', 'saveAndResume'];
+const ACCESS_FIELDS = ['opensAt', 'closesAt', 'timezone', 'eligibilityThreshold', 'saveAndResume','allowedDeviceTypes', 'cities', 'regions', 'allowSectionSwitching'];
 
 const accessSchema = {
   ...idParam,
@@ -169,6 +186,10 @@ const accessSchema = {
         .max(100, 'Threshold must be between 0 and 100')
         .optional(),
       saveAndResume: boolish.optional(),
+      allowedDeviceTypes: deviceTypesField.optional(),
+      cities: csvList().optional(),
+      regions: csvList().optional(),
+      allowSectionSwitching: boolish.optional(),
       changeNote: z.string().trim().max(500).optional(),
     })
     .refine((d) => ACCESS_FIELDS.some((k) => d[k] !== undefined), {
