@@ -11,6 +11,12 @@ const list = asyncHandler(async (req, res) => {
   res.json({ data: candidates });
 });
 
+// Global list across all assessments.
+const listAll = asyncHandler(async (req, res) => {
+  const result = await service.listAllCandidates(req.validatedQuery || {});
+  res.json({ data: result.items, meta: result.meta });
+});
+
 const getOne = asyncHandler(async (req, res) => {
   const candidate = await service.getCandidate(Number(req.params.id), Number(req.params.candidateId));
   res.json({ data: candidate });
@@ -54,6 +60,7 @@ const generateLink = asyncHandler(async (req, res) => {
 module.exports = {
   create,
   list,
+  listAll,
   getOne,
   listQuestions,
   updateQuestion,

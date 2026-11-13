@@ -51,6 +51,20 @@ const listCandidatesSchema = {
   }),
 };
 
+// Global candidate list (across all assessments): search + filters + paging.
+const listAllCandidatesSchema = {
+  query: z.object({
+    search: z.string().trim().max(200).optional(),
+    status: z.enum(STATUSES).optional(),
+    source: z.enum(SOURCES).optional(),
+    assessmentId: z.coerce.number().int().positive().optional(),
+    page: z.coerce.number().int().positive().default(1),
+    pageSize: z.coerce.number().int().positive().max(100).default(20),
+    sortBy: z.enum(['createdAt', 'updatedAt', 'name', 'email', 'status']).default('createdAt'),
+    sortOrder: z.enum(['asc', 'desc']).default('desc'),
+  }),
+};
+
 // --- candidate question review (fresh sets) ---
 const updateCandidateQuestionSchema = {
   ...candidateQuestionParam,
@@ -101,4 +115,5 @@ module.exports = {
   listCandidatesSchema,
   updateCandidateQuestionSchema,
   timerApprovalSchema,
+  listAllCandidatesSchema,
 };

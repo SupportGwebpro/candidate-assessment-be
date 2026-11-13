@@ -151,6 +151,38 @@ async function assignCandidate(id, data, adminId) {
 
 // --- read ------------------------------------------------------------------
 
+/// Global candidate list across all assessments (the whole candidates table),
+/// with search (name/email), status/source/assessment filters, sorting + paging.
+async function listAllCandidates(filters = {}) {
+  const { search, status, source, assessmentId, page, pageSize, sortBy, sortOrder } = filters;
+
+  const where = {};
+  if (status) where.status = status;
+  if (source) where.questionSource = source;
+  if (assessmentId) where.assessmentId = assessmentId;
+  if (search) where.OR = [{ name: { contains: search } }, { email: { contains: search } }];
+
+  const [rows, total] = await prisma.$transaction([
+    prisma.candidate.findMany({
+      where,
+      include: {
+        _count: { select: { questions: true } },
+        assessment: { select: { id: true, name: true, role: true, status: true } },
+      },
+      orderBy: { [sortBy]: sortOrder },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    }),
+    prisma.candidate.count({ where }),
+  ]);
+
+  return {
+    items: rows.map((c) => ({ ...serialize(c), assessment: c.assessment })),
+    meta: { page, pageSize, total, totalPages: Math.max(1, Math.ceil(total / pageSize)) },
+  };
+}
+
+
 async function listCandidates(id, filters = {}) {
   await findAssessment(id);
   const where = { assessmentId: id };
@@ -317,6 +349,7 @@ async function generateLink(id, candidateId, adminId) {
 
 module.exports = {
   assignCandidate,
+  listAllCandidates,
   listCandidates,
   getCandidate,
   listCandidateQuestions,
