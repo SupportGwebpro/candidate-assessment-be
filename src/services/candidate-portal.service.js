@@ -81,17 +81,30 @@ function isPublicIp(value) {
 async function lookupLocation(ip) {
   if (!isPublicIp(ip)) return { city: null, region: null };
   try {
-    const response = await fetch(`https://ipapi.co/${encodeURIComponent(ip)}/json/`, {
-      signal: AbortSignal.timeout(5000),
-    });
-    if (!response.ok) return { city: null, region: null };
+    // ip-api.com's free endpoint is HTTP-only and restricted to non-commercial use.
+    const response = await fetch(
+      `http://ip-api.com/json/${encodeURIComponent(ip)}?fields=status,message,city,regionName`,
+      {
+        signal: AbortSignal.timeout(5000),
+      }
+    );
+    if (!response.ok) {
+      console.warn(`[candidate location lookup] ip-api.com returned HTTP ${response.status}`);
+      return { city: null, region: null };
+    }
     const data = await response.json();
-    if (data.error) return { city: null, region: null };
+    if (data.status !== 'success') {
+      console.warn(`[candidate location lookup] ip-api.com lookup failed: ${data.message || data.status || 'unknown error'}`);
+      return { city: null, region: null };
+    }
     return {
       city: typeof data.city === 'string' ? data.city : null,
-      region: typeof data.region === 'string' ? data.region : null,
+      region: typeof data.regionName === 'string' ? data.regionName : null,
     };
-  } catch {
+  } catch (error) {
+    console.warn('[candidate location lookup] ip-api.com request failed', {
+      code: error.cause?.code || error.name || 'UNKNOWN',
+    });
     return { city: null, region: null };
   }
 }
