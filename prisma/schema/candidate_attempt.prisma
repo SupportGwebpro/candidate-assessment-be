@@ -1,0 +1,148 @@
+enum CandidateAttemptState {
+  IN_PROGRESS
+  DRAFT
+  SUBMITTED
+  CANCELLED
+}
+
+enum CandidateContactMethod {
+  EMAIL
+  PHONE
+}
+
+enum CandidateAttemptPhase {
+  QUESTIONS
+  READING
+  SPEAKING
+}
+
+enum CandidateTaskStatus {
+  PENDING
+  READY
+  RECORDED
+  SKIPPED
+}
+
+model CandidateAttempt {
+  id                 Int                   @id @default(autoincrement())
+  candidateId        Int                   @unique @map("candidate_id")
+  state              CandidateAttemptState @default(IN_PROGRESS)
+  phase              CandidateAttemptPhase @default(QUESTIONS)
+  startedAt          DateTime              @map("started_at")
+  deadlineAt         DateTime              @map("deadline_at")
+  taskDeadlineAt     DateTime?             @map("task_deadline_at")
+  readingStatus      CandidateTaskStatus   @default(PENDING) @map("reading_status")
+  speakingStatus     CandidateTaskStatus   @default(PENDING) @map("speaking_status")
+  activeQuestionId   Int?                  @map("active_question_id")
+  draftedAt          DateTime?             @map("drafted_at")
+  submittedAt        DateTime?             @map("submitted_at")
+  submissionReason   String?               @map("submission_reason") @db.VarChar(40)
+  cancellationReason String?               @map("cancellation_reason") @db.VarChar(80)
+  privacyConsentAt   DateTime              @map("privacy_consent_at")
+  recordingConsentAt DateTime              @map("recording_consent_at")
+  deviceHash         String                @map("device_hash") @db.VarChar(64)
+  securityCheck      Json?                 @map("security_check")
+  faceState          String                @default("present") @map("face_state") @db.VarChar(16)
+  faceAbsentSince    DateTime?             @map("face_absent_since")
+  faceAbsenceCounted Boolean               @default(false) @map("face_absence_counted")
+  score              Float?
+  evaluationStatus   String?               @map("evaluation_status") @db.VarChar(24)
+  createdAt          DateTime              @default(now()) @map("created_at")
+  updatedAt          DateTime              @updatedAt @map("updated_at")
+
+  candidate  Candidate                   @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  answers    CandidateAnswer[]
+  progress   CandidateQuestionProgress[]
+  incidents  CandidateIncident[]
+  recordings CandidateRecording[]
+
+  @@index([state, deadlineAt])
+  @@map("candidate_attempts")
+}
+
+enum CandidateRecordingKind {
+  READING
+  SPEAKING
+}
+
+model CandidateRecording {
+  id              Int                    @id @default(autoincrement())
+  attemptId       Int                    @map("attempt_id")
+  kind            CandidateRecordingKind
+  storagePath     String                 @map("storage_path") @db.VarChar(1024)
+  contentType     String                 @map("content_type") @db.VarChar(80)
+  byteSize        Int                    @map("byte_size")
+  durationSeconds Float?                 @map("duration_seconds")
+  createdAt       DateTime               @default(now()) @map("created_at")
+  updatedAt       DateTime               @updatedAt @map("updated_at")
+
+  attempt CandidateAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+
+  @@unique([attemptId, kind])
+  @@map("candidate_recordings")
+}
+
+model CandidateAnswer {
+  id                  Int      @id @default(autoincrement())
+  attemptId           Int      @map("attempt_id")
+  candidateQuestionId Int      @map("candidate_question_id")
+  answer              String   @db.Text
+  savedAt             DateTime @default(now()) @map("saved_at")
+
+  attempt           CandidateAttempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  candidateQuestion CandidateQuestion @relation(fields: [candidateQuestionId], references: [id], onDelete: Cascade)
+
+  @@unique([attemptId, candidateQuestionId])
+  @@index([candidateQuestionId])
+  @@map("candidate_answers")
+}
+
+model CandidateQuestionProgress {
+  id                  Int       @id @default(autoincrement())
+  attemptId           Int       @map("attempt_id")
+  candidateQuestionId Int       @map("candidate_question_id")
+  startedAt           DateTime  @map("started_at")
+  lockedAt            DateTime? @map("locked_at")
+  faceWarningCount    Int       @default(0) @map("face_warning_count")
+
+  attempt           CandidateAttempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  candidateQuestion CandidateQuestion @relation(fields: [candidateQuestionId], references: [id], onDelete: Cascade)
+
+  @@unique([attemptId, candidateQuestionId])
+  @@index([attemptId, startedAt])
+  @@map("candidate_question_progress")
+}
+
+model CandidateIncident {
+  id         Int      @id @default(autoincrement())
+  attemptId  Int      @map("attempt_id")
+  eventId    String?  @map("event_id") @db.VarChar(128)
+  type       String   @db.VarChar(40)
+  detail     String?  @db.Text
+  occurredAt DateTime @default(now()) @map("occurred_at")
+
+  attempt CandidateAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+
+  @@unique([attemptId, eventId])
+  @@index([attemptId, occurredAt])
+  @@map("candidate_incidents")
+}
+
+model CandidateContactVerification {
+  id          Int                    @id @default(autoincrement())
+  candidateId Int                    @unique @map("candidate_id")
+  method      CandidateContactMethod
+  contact     String                 @db.VarChar(254)
+  codeHash    String                 @map("code_hash") @db.VarChar(64)
+  deviceHash  String                 @map("device_hash") @db.VarChar(64)
+  sentAt      DateTime               @map("sent_at")
+  expiresAt   DateTime               @map("expires_at")
+  attempts    Int                    @default(0)
+  verifiedAt  DateTime?              @map("verified_at")
+  createdAt   DateTime               @default(now()) @map("created_at")
+  updatedAt   DateTime               @updatedAt @map("updated_at")
+
+  candidate Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  @@map("candidate_contact_verifications")
+}

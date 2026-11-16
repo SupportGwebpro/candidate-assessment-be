@@ -25,7 +25,13 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 if (env.nodeEnv !== 'test') {
-  app.use(morgan(env.nodeEnv === 'development' ? 'dev' : 'combined'));
+  morgan.token('redacted-url', (req) => req.originalUrl.replace(
+    /(\/candidate\/invitations\/)[^/?]+/g,
+    '$1[redacted]'
+  ));
+  app.use(morgan(env.nodeEnv === 'development'
+    ? ':method :redacted-url :status :response-time ms'
+    : ':remote-addr - :remote-user [:date[clf]] ":method :redacted-url HTTP/:http-version" :status :res[content-length] ":referrer" ":user-agent"'));
 }
 
 app.use('/api', routes);

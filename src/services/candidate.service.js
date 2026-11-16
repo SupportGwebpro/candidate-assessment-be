@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const { Prisma } = require('@prisma/client');
 const prisma = require('../lib/prisma');
 const env = require('../config/env');
 const { notFound, conflict, badRequest } = require('../utils/http');
@@ -334,10 +335,30 @@ async function generateLink(id, candidateId, adminId) {
     throw conflict('Timer approval (with note) is required before generating the link');
   }
 
+  const [readingTask, speakingTask] = await prisma.$transaction([
+    prisma.assessmentReadingTask.findUnique({ where: { assessmentId: id } }),
+    prisma.assessmentSpeakingTask.findUnique({ where: { assessmentId: id } }),
+  ]);
+  if (readingTask && (!readingTask.approved || !readingTask.passage)) {
+    throw conflict('Approve and complete the reading task before generating the candidate link');
+  }
+  if (speakingTask && (!speakingTask.approved || !speakingTask.topic)) {
+    throw conflict('Approve and complete the speaking task before generating the candidate link');
+  }
+
   const token = crypto.randomBytes(24).toString('hex');
   const updated = await prisma.candidate.update({
     where: { id: candidateId },
-    data: { accessToken: token, linkGeneratedAt: new Date() },
+    data: {
+      accessToken: token,
+      linkGeneratedAt: new Date(),
+      readingTaskSnapshot: readingTask
+        ? { passage: readingTask.passage, maxMarks: readingTask.maxMarks, windowSeconds: readingTask.readingWindowSeconds }
+        : Prisma.JsonNull,
+      speakingTaskSnapshot: speakingTask
+        ? { topic: speakingTask.topic, maxMarks: speakingTask.maxMarks, windowSeconds: speakingTask.speakingWindowSeconds }
+        : Prisma.JsonNull,
+    },
   });
 
   return {

@@ -1,4 +1,5 @@
 const service = require('../services/candidate.service');
+const portalService = require('../services/candidate-portal.service');
 const { asyncHandler } = require('../utils/http');
 
 const create = asyncHandler(async (req, res) => {
@@ -57,6 +58,15 @@ const generateLink = asyncHandler(async (req, res) => {
   res.json({ data: result });
 });
 
+const streamAttemptRecording = asyncHandler(async (req, res) => {
+  const recording = await portalService.getCandidateRecording(
+    Number(req.params.candidateId), req.params.kind
+  );
+  res.type(recording.contentType);
+  res.set('Cache-Control', 'private, no-store');
+  res.sendFile(recording.absolutePath);
+});
+
 module.exports = {
   create,
   list,
@@ -68,4 +78,5 @@ module.exports = {
   approveQuestions,
   setTimerApproval,
   generateLink,
+  streamAttemptRecording,
 };

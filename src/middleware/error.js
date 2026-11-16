@@ -31,6 +31,11 @@ const errorHandler = (err, req, res, next) => {
       error: { message: 'Resource not found', code: 'NOT_FOUND' },
     });
   }
+  if (err.code === 'LIMIT_FILE_SIZE') {
+    return res.status(413).json({
+      error: { message: 'Candidate audio recording exceeds the 15 MB limit', code: 'PAYLOAD_TOO_LARGE' },
+    });
+  }
 
   // express.json() / body-parser errors — map to the right client-error status
   // instead of a generic 500.

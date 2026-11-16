@@ -232,3 +232,63 @@ can be built up progressively. Run `npm run prisma:migrate` to apply.
 - AI output is clamped/validated before use (section types coerced, counts
   bounded, MCQ options checked) so a malformed model response can't corrupt data.
 - All wizard routes require auth, same as the rest of the module.
+
+---
+
+## Candidate attempt portal
+
+
+Candidate links use an unguessable token in the URL. These routes are public to
+the candidate but require the invitation token and the same browser identifier
+(`X-Candidate-Device`) for verification, attempt changes, recordings, and receipt
+access. Candidate APIs return candidate-safe question data only; answer keys,
+rubrics, and HR decisions are not exposed.
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| GET | `/candidate/invitations/:token` | Candidate-safe invitation status and setup overview |
+| POST | `/candidate/invitations/:token/contact/code` | Send a code to the HR-registered email or phone |
+| POST | `/candidate/invitations/:token/contact/verify` | Verify the six-digit code on this browser |
+| POST | `/candidate/invitations/:token/security` | Check allowed device and configured location |
+| POST | `/candidate/invitations/:token/start` | Start or resume after checks and required consents |
+| PUT | `/candidate/invitations/:token/responses/:questionId` | Autosave an answer |
+| POST | `/candidate/invitations/:token/session` | Set the active question and return authoritative attempt state |
+| POST | `/candidate/invitations/:token/final-tasks/:kind/start` | Start the approved reading or speaking task |
+| POST | `/candidate/invitations/:token/final-tasks/:kind/recording` | Upload a task recording as multipart field `file` |
+| POST | `/candidate/invitations/:token/draft` | Save and pause when HR enabled resume |
+| POST | `/candidate/invitations/:token/incidents` | Record a device, fullscreen, or network incident |
+| POST | `/candidate/invitations/:token/face-presence` | Report presence state; pause and apply repeated-absence warnings |
+| POST | `/candidate/invitations/:token/violations` | Record a tab switch; the first event cancels the attempt |
+| POST | `/candidate/invitations/:token/submit` | Finalize once and return the candidate receipt |
+| GET | `/candidate/invitations/:token/receipt` | Retrieve the receipt from the original verified browser |
+| GET | `/candidates/:candidateId/attempt/recordings/:kind` | Authenticated HR playback of a retained task recording |
+
+Candidate attempt data is persisted in the `candidate_attempts`,
+`candidate_answers`, `candidate_question_progress`, `candidate_incidents`,
+`candidate_contact_verifications`, and `candidate_recordings` tables. Apply the
+new migration and regenerate Prisma Client before starting the API:
+
+```bash
+npm run prisma:deploy
+npm run prisma:generate
+```
+
+In development, when neither a delivery relay nor SMTP is configured,
+contact-code responses include `developmentCode` for local testing. To deliver
+email directly through Gmail, configure `SMTP_HOST`, `SMTP_PORT`,
+`SMTP_SECURE`, `SMTP_USER`, and `SMTP_PASSWORD`; create a Google App Password
+with 2-Step Verification enabled and do not use the normal account password.
+`SMTP_FROM` defaults to `SMTP_USER`. SMTP supports email only; phone delivery
+requires the trusted HTTPS relay configured with `CONTACT_CODE_DELIVERY_URL`
+and `CONTACT_CODE_DELIVERY_TOKEN`. In production, missing delivery settings
+fail closed with 503. Restart the backend after changing environment variables.
+
+Configure `CANDIDATE_MEDIA_DIR` as a private persistent volume for audio
+recordings. It is not served statically; the HR recording route is authenticated.
+Recording duration is candidate-reported and is not suitable for automated
+scoring until a trusted media-duration/evaluation worker is configured. Written
+answers and audio tasks remain marked for manual review.
+
+The current candidate schema supports one attempt per assignment and an overall
+attempt timer plus per-question estimates. It does not yet support section-level
+timers or retakes.

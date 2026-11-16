@@ -1,7 +1,7 @@
 const { z } = require('zod');
 
 const SOURCES = ['SHARED', 'FRESH'];
-const STATUSES = ['INVITED', 'IN_PROGRESS', 'COMPLETED'];
+const STATUSES = ['INVITED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'];
 const DIFFICULTIES = ['EASY', 'MEDIUM', 'HARD'];
 
 const boolish = z.preprocess((v) => {
@@ -28,6 +28,13 @@ const candidateQuestionParam = {
     id: z.coerce.number().int().positive('Invalid id'),
     candidateId: z.coerce.number().int().positive('Invalid candidateId'),
     cqId: z.coerce.number().int().positive('Invalid question id'),
+  }),
+};
+
+const candidateRecordingParam = {
+  params: z.object({
+    candidateId: z.coerce.number().int().positive(),
+    kind: z.enum(['reading', 'speaking']),
   }),
 };
 
@@ -111,6 +118,7 @@ module.exports = {
   assessmentParam,
   candidateParam,
   candidateQuestionParam,
+  candidateRecordingParam,
   createAssignmentSchema,
   listCandidatesSchema,
   updateCandidateQuestionSchema,

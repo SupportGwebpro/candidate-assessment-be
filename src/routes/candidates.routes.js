@@ -9,5 +9,6 @@ const router = express.Router();
 // Global candidate list across all assessments. Auth required.
 router.use(requireAuth);
 router.get('/', validate(candv.listAllCandidatesSchema), controller.listAll);
+router.get('/:candidateId/attempt/recordings/:kind', validate(candv.candidateRecordingParam), controller.streamAttemptRecording);
 
 module.exports = router;

@@ -25,13 +25,13 @@ model AssessmentQuestion {
   correctOption Int?         @map("correct_option")
   modelAnswer   String?      @map("model_answer") @db.Text
 
-    // HR-editable scoring/metadata
+  // HR-editable scoring/metadata
   evaluationRubric     String?     @map("evaluation_rubric") @db.Text
   marks                Int?
   difficulty           Difficulty?
   estimatedTimeSeconds Int?        @map("estimated_time_seconds")
 
-  order         Int          @default(0)
+  order Int @default(0)
 
   // Question approval (independent of the overall timer approval). Any edit or
   // regeneration of this question resets approved to false.

@@ -122,7 +122,7 @@ const addCandidateSchema = {
   body: z.object({
     name: z.string().trim().min(1, 'Name is required').max(200),
     email: z.string().trim().toLowerCase().email('A valid email is required'),
-    status: z.enum(['INVITED', 'IN_PROGRESS', 'COMPLETED']).optional(),
+    status: z.enum(['INVITED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED']).optional(),
   }),
 };
 

@@ -4,12 +4,12 @@
 /// these resets `approved` (editing removes approval). `aiSuggestedWindowSeconds`
 /// stores the window the AI last suggested, for the "matches AI suggests" hint.
 model AssessmentReadingTask {
-  id                       Int       @id @default(autoincrement())
-  assessmentId             Int       @unique @map("assessment_id")
-  passage                  String?   @db.Text
-  maxMarks                 Int?      @map("max_marks")
-  readingWindowSeconds     Int?      @map("reading_window_seconds")
-  aiSuggestedWindowSeconds Int?      @map("ai_suggested_window_seconds")
+  id                       Int     @id @default(autoincrement())
+  assessmentId             Int     @unique @map("assessment_id")
+  passage                  String? @db.Text
+  maxMarks                 Int?    @map("max_marks")
+  readingWindowSeconds     Int?    @map("reading_window_seconds")
+  aiSuggestedWindowSeconds Int?    @map("ai_suggested_window_seconds")
 
   approved     Boolean   @default(false)
   approvedAt   DateTime? @map("approved_at")

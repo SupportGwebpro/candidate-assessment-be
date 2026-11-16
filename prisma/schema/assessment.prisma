@@ -36,15 +36,15 @@ model Assessment {
   candidateInstructions String? @map("candidate_instructions") @db.Text
 
   // Step 3 — Assessment Access
-  opensAt              DateTime? @map("opens_at")
-  closesAt             DateTime? @map("closes_at")
-  timezone             String?
-  eligibilityThreshold Int?      @map("eligibility_threshold")
-  saveAndResume        Boolean   @default(false) @map("save_and_resume")
-  allowedDeviceTypes    Json?   @map("allowed_device_types")
+  opensAt               DateTime? @map("opens_at")
+  closesAt              DateTime? @map("closes_at")
+  timezone              String?
+  eligibilityThreshold  Int?      @map("eligibility_threshold")
+  saveAndResume         Boolean   @default(false) @map("save_and_resume")
+  allowedDeviceTypes    Json?     @map("allowed_device_types")
   cities                Json?
   regions               Json?
-  allowSectionSwitching Boolean @default(false) @map("allow_section_switching")
+  allowSectionSwitching Boolean   @default(false) @map("allow_section_switching")
 
   // Step 4 — Review & Generate
   blueprintGeneratedAt DateTime? @map("blueprint_generated_at")
@@ -64,11 +64,11 @@ model Assessment {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  versions   AssessmentVersion[]
-  candidates Candidate[]
-  skills     AssessmentSkill[]
-  sections   AssessmentSection[]
-  questions  AssessmentQuestion[]
+  versions       AssessmentVersion[]
+  candidates     Candidate[]
+  skills         AssessmentSkill[]
+  sections       AssessmentSection[]
+  questions      AssessmentQuestion[]
   competencies   AssessmentCompetency[]
   keyResultAreas AssessmentKeyResultArea[]
   readingTask    AssessmentReadingTask?

@@ -5,12 +5,12 @@
 /// stores the window the AI last suggested (a fixed 5-minute default, independent
 /// of the topic), for the "matches AI suggests" hint.
 model AssessmentSpeakingTask {
-  id                       Int       @id @default(autoincrement())
-  assessmentId             Int       @unique @map("assessment_id")
-  topic                    String?   @db.Text
-  maxMarks                 Int?      @map("max_marks")
-  speakingWindowSeconds    Int?      @map("speaking_window_seconds")
-  aiSuggestedWindowSeconds Int?      @map("ai_suggested_window_seconds")
+  id                       Int     @id @default(autoincrement())
+  assessmentId             Int     @unique @map("assessment_id")
+  topic                    String? @db.Text
+  maxMarks                 Int?    @map("max_marks")
+  speakingWindowSeconds    Int?    @map("speaking_window_seconds")
+  aiSuggestedWindowSeconds Int?    @map("ai_suggested_window_seconds")
 
   approved     Boolean   @default(false)
   approvedAt   DateTime? @map("approved_at")

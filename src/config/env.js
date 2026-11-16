@@ -1,4 +1,5 @@
 require('dotenv').config();
+const path = require('path');
 
 function required(name) {
   const value = process.env[name];
@@ -47,6 +48,22 @@ const env = {
 
   // Base URL used to build the candidate assessment link from the access token.
   candidateLinkBaseUrl: process.env.CANDIDATE_LINK_BASE_URL || '',
+
+  // Optional authenticated delivery relay. Without it, contact verification
+  // uses SMTP for email when configured. The relay supports email and phone.
+  contactCodeDeliveryUrl: process.env.CONTACT_CODE_DELIVERY_URL || '',
+  contactCodeDeliveryToken: process.env.CONTACT_CODE_DELIVERY_TOKEN || '',
+  smtp: {
+    host: process.env.SMTP_HOST || '',
+    port: parseInt(process.env.SMTP_PORT || '465', 10),
+    secure: process.env.SMTP_SECURE !== 'false',
+    user: process.env.SMTP_USER || '',
+    password: process.env.SMTP_PASSWORD || '',
+    from: process.env.SMTP_FROM || process.env.SMTP_USER || '',
+  },
+  candidateMediaDirectory: path.resolve(
+    process.env.CANDIDATE_MEDIA_DIR || path.join(__dirname, '../../private-media/candidates')
+  ),
 };
 
 module.exports = env;

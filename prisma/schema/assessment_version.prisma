@@ -3,20 +3,20 @@
 /// details" in the list/detail views. Never updated or deleted — a new row is
 /// appended each time, so the full history stays discoverable.
 model AssessmentVersion {
-  id            Int    @id @default(autoincrement())
-  assessmentId  Int    @map("assessment_id")
-  versionNumber Int    @map("version_number")
+  id            Int @id @default(autoincrement())
+  assessmentId  Int @map("assessment_id")
+  versionNumber Int @map("version_number")
 
   // Snapshot of the assessment fields at this version.
   name            String
   role            String
   level           Level?
   status          AssessmentStatus
-  durationMinutes Int?   @map("duration_minutes")
+  durationMinutes Int?             @map("duration_minutes")
 
   // What produced this version, e.g. "CREATE", "EDIT", "PUBLISH",
   // "ARCHIVE", "RESTORE", plus an optional human note.
-  action    String
+  action     String
   changeNote String? @map("change_note") @db.Text
 
   createdById Int     @map("created_by_id")
