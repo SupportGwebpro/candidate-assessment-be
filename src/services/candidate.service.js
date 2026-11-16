@@ -41,6 +41,7 @@ const serialize = (c, questionCount) => ({
   timerApprovedSeconds: c.timerApprovedSeconds ?? null,
   timerApprovedAt: c.timerApprovedAt ?? null,
   linkGenerated: !!c.accessToken,
+  link: c.accessToken ? buildLink(c.accessToken) : null,
   linkGeneratedAt: c.linkGeneratedAt ?? null,
   canGenerateLink: c.questionsApproved && c.timerApproved,
   questionCount: questionCount !== undefined ? questionCount : c._count ? c._count.questions : undefined,
