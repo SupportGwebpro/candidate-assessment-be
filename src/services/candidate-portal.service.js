@@ -177,8 +177,11 @@ async function securityResult(candidate, req, consent) {
   if (!consent) throw forbidden('Consent to the approximate IP location lookup is required.');
   const hash = hashDevice(req);
   const type = deviceType(req.get('User-Agent'));
+  //convert to uppercase for comparison with allowedDeviceTypes, which are stored in uppercase
+  const normalizedType = type ? type.toUpperCase() : null;
+
   const allowedDevices = allowedValues(candidate.assessment.allowedDeviceTypes);
-  const deviceAllowed = allowedDevices.length === 0 || allowedDevices.includes(type);
+  const deviceAllowed = allowedDevices.length === 0 || allowedDevices.includes(normalizedType);
   const cities = allowedValues(candidate.assessment.cities);
   const regions = allowedValues(candidate.assessment.regions);
   const hasLocationRule = cities.length > 0 || regions.length > 0;
