@@ -47,6 +47,9 @@ model CandidateAttempt {
   faceAbsenceCounted Boolean               @default(false) @map("face_absence_counted")
   score              Float?
   evaluationStatus   String?               @map("evaluation_status") @db.VarChar(24)
+  evaluationFeedback String?               @map("evaluation_feedback") @db.Text
+  evaluatedAt        DateTime?             @map("evaluated_at")
+  evaluatedById      Int?                  @map("evaluated_by_id")
   createdAt          DateTime              @default(now()) @map("created_at")
   updatedAt          DateTime              @updatedAt @map("updated_at")
 
@@ -66,15 +69,17 @@ enum CandidateRecordingKind {
 }
 
 model CandidateRecording {
-  id              Int                    @id @default(autoincrement())
-  attemptId       Int                    @map("attempt_id")
-  kind            CandidateRecordingKind
-  storagePath     String                 @map("storage_path") @db.VarChar(1024)
-  contentType     String                 @map("content_type") @db.VarChar(80)
-  byteSize        Int                    @map("byte_size")
-  durationSeconds Float?                 @map("duration_seconds")
-  createdAt       DateTime               @default(now()) @map("created_at")
-  updatedAt       DateTime               @updatedAt @map("updated_at")
+  id                 Int                    @id @default(autoincrement())
+  attemptId          Int                    @map("attempt_id")
+  kind               CandidateRecordingKind
+  storagePath        String                 @map("storage_path") @db.VarChar(1024)
+  contentType        String                 @map("content_type") @db.VarChar(80)
+  byteSize           Int                    @map("byte_size")
+  durationSeconds    Float?                 @map("duration_seconds")
+  awardedMarks       Float?                 @map("awarded_marks")
+  evaluationFeedback String?                @map("evaluation_feedback") @db.Text
+  createdAt          DateTime               @default(now()) @map("created_at")
+  updatedAt          DateTime               @updatedAt @map("updated_at")
 
   attempt CandidateAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
 

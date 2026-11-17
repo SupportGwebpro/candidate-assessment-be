@@ -24,6 +24,8 @@ const bpv = require('../validators/blueprint.validator');
 // Candidate assignment module.
 const cand = require('../controllers/candidate.controller');
 const candv = require('../validators/candidate.validator');
+const evaluation = require('../controllers/candidate-evaluation.controller');
+const evaluationValidator = require('../validators/candidate-evaluation.validator');
 
 const router = express.Router();
 
@@ -70,6 +72,16 @@ router.get('/:id/versions', validate(idParam), controller.listVersions);
 router.get('/:id/candidates', validate(candv.listCandidatesSchema), cand.list);
 router.post('/:id/candidates', validate(candv.createAssignmentSchema), cand.create);
 router.get('/:id/candidates/:candidateId', validate(candv.candidateParam), cand.getOne);
+router.get(
+  '/:id/candidates/:candidateId/evaluation',
+  validate(evaluationValidator.evaluationParam),
+  evaluation.getEvaluation
+);
+router.put(
+  '/:id/candidates/:candidateId/evaluation',
+  validate({ ...evaluationValidator.evaluationParam, ...evaluationValidator.evaluationBody }),
+  evaluation.saveEvaluation
+);
 
 // Candidate question review (fresh sets need approval before link generation)
 router.get('/:id/candidates/:candidateId/questions', validate(candv.candidateParam), cand.listQuestions);

@@ -311,7 +311,7 @@ function receiptPayload(candidate) {
     message: cancelled
       ? 'The assessment was cancelled after a tab switch. No overall score was produced.'
       : attempt.evaluationStatus === 'manual_review'
-        ? 'Submission received. A person will review your written answers.'
+        ? 'Submission received. A person will review any written answers and recorded tasks.'
         : 'Submission received and evaluated.',
     score: cancelled ? null : attempt.score,
     evaluationStatus: cancelled ? 'cancelled' : attempt.evaluationStatus,

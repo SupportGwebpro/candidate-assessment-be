@@ -262,6 +262,8 @@ rubrics, and HR decisions are not exposed.
 | POST | `/candidate/invitations/:token/submit` | Finalize once and return the candidate receipt |
 | GET | `/candidate/invitations/:token/receipt` | Retrieve the receipt from the original verified browser |
 | GET | `/candidates/:candidateId/attempt/recordings/:kind` | Authenticated HR playback of a retained task recording |
+| GET | `/assessments/:id/candidates/:candidateId/evaluation` | Authenticated HR review of submitted answers, task recordings, and current evaluation |
+| PUT | `/assessments/:id/candidates/:candidateId/evaluation` | Save HR marks and feedback; finalize the score when all required review is complete |
 
 Candidate attempt data is persisted in the `candidate_attempts`,
 `candidate_answers`, `candidate_question_progress`, `candidate_incidents`,
@@ -287,7 +289,50 @@ Configure `CANDIDATE_MEDIA_DIR` as a private persistent volume for audio
 recordings. It is not served statically; the HR recording route is authenticated.
 Recording duration is candidate-reported and is not suitable for automated
 scoring until a trusted media-duration/evaluation worker is configured. Written
-answers and audio tasks remain marked for manual review.
+answers and recorded audio tasks start in manual review and can be completed
+through the HR evaluation APIs below.
+
+### HR assessment evaluation
+
+The HR evaluation routes require the normal HR bearer token. Retrieve the review
+payload only after a candidate is assigned to the assessment:
+
+```http
+GET /api/assessments/:id/candidates/:candidateId/evaluation
+```
+
+The response contains the submitted answers alongside question prompts, MCQ
+answer keys, written-answer references/rubrics, task recording playback URLs,
+and monitoring incidents. Recording URLs use the authenticated
+`GET /api/candidates/:candidateId/attempt/recordings/:kind` route.
+
+Save marks and optional feedback with:
+
+```http
+PUT /api/assessments/:id/candidates/:candidateId/evaluation
+Content-Type: application/json
+
+{
+  "questionEvaluations": [
+    { "questionId": 123, "awardedMarks": 7, "feedback": "Good reasoning." }
+  ],
+  "taskEvaluations": [
+    { "kind": "reading", "awardedMarks": 8, "feedback": "Clear and accurate." }
+  ],
+  "overallFeedback": "Strong response overall."
+}
+```
+
+`questionId` is the candidate-specific question ID returned by the evaluation
+GET endpoint. Only written questions can receive manual question marks; MCQs
+remain automatically scored. A task can be evaluated only when its recording
+exists. `awardedMarks` may be `null` to clear a mark. Partial updates are
+allowed: the attempt remains `manual_review` and has no overall score until all
+written questions and all recorded final tasks have marks. Once complete, the
+backend calculates the percentage from the automatic MCQ marks and HR marks,
+and saves `evaluatedAt`, `evaluatedById`, and overall feedback. Skipped or
+unrecorded optional tasks contribute zero marks, while their configured maximum
+marks remain part of the score denominator.
 
 The current candidate schema supports one attempt per assignment and an overall
 attempt timer plus per-question estimates. It does not yet support section-level

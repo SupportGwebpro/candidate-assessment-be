@@ -14,6 +14,8 @@ model CandidateQuestion {
   modelAnswer          String?      @map("model_answer") @db.Text
   evaluationRubric     String?      @map("evaluation_rubric") @db.Text
   marks                Int?
+  awardedMarks         Float?       @map("awarded_marks")
+  evaluationFeedback   String?      @map("evaluation_feedback") @db.Text
   difficulty           Difficulty?
   estimatedTimeSeconds Int?         @map("estimated_time_seconds")
   approved             Boolean      @default(false)
