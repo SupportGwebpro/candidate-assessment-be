@@ -309,6 +309,12 @@ async function setAccess(id, data, adminId) {
 
 // --- Step 4: generate blueprint --------------------------------------------
 
+// Default marks stored on every question created by blueprint generation.
+// the defaults are 1 for MCQ and 2 for written.
+// services; HR can still override per question afterwards.
+const DEFAULT_MCQ_MARKS = 1;
+const DEFAULT_WRITTEN_MARKS = 2;
+
 async function generateBlueprint(id, adminId, changeNote) {
   const a = await findOrThrow(id);
   ensureEditable(a);
@@ -347,13 +353,13 @@ async function generateBlueprint(id, adminId, changeNote) {
         for (const q of mcqs) {
           rows.push({
             assessmentId: id, sectionId: section.id, type: 'MCQ',
-            prompt: q.prompt, options: q.options, correctOption: q.correctOption, order: order++,
+            prompt: q.prompt, options: q.options, correctOption: q.correctOption, marks: DEFAULT_MCQ_MARKS, order: order++,
           });
         }
         for (const q of written) {
           rows.push({
             assessmentId: id, sectionId: section.id, type: 'WRITTEN',
-            prompt: q.prompt, modelAnswer: q.modelAnswer ?? null, order: order++,
+            prompt: q.prompt, modelAnswer: q.modelAnswer ?? null, marks: DEFAULT_WRITTEN_MARKS, order: order++,
           });
         }
         if (rows.length) await tx.assessmentQuestion.createMany({ data: rows });
