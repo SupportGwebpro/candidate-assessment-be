@@ -364,7 +364,7 @@ async function generateLink(id, candidateId, adminId) {
 
 
   const link = buildLink(token);
-  const link_for_email= "https://assess-candidate.netlify.app/"+link
+  const link_for_email= "https://assess-candidate.netlify.app"+link
 
   // Email the candidate their link. The link is already saved at this point, so
   // a mail problem must not fail the request — it is reported in the response
