@@ -4,6 +4,7 @@ const prisma = require('../lib/prisma');
 const env = require('../config/env');
 const { notFound, conflict, badRequest } = require('../utils/http');
 const ai = require('./ai.service');
+const { sendCandidateAssessmentLink } = require('./mail.service');
 
 // --- lookups / helpers -----------------------------------------------------
 
@@ -361,11 +362,36 @@ async function generateLink(id, candidateId, adminId) {
     },
   });
 
+
+  const link = buildLink(token);
+  const link_for_email= "https://assess-candidate.netlify.app/"+link
+
+  // Email the candidate their link. The link is already saved at this point, so
+  // a mail problem must not fail the request — it is reported in the response
+  // and HR can still share the link manually.
+  let email;
+  try {
+    email = await sendCandidateAssessmentLink({
+      to: candidate.email,
+      candidateName: candidate.name,
+      assessment: a,
+      link: link_for_email,
+      durationSeconds:
+        candidate.timerApprovedSeconds ?? (a.durationMinutes ? a.durationMinutes * 60 : null),
+    });
+  } catch (error) {
+    console.error('[candidate link email error]', error.name);
+    email = { status: 'FAILED', message: 'The email could not be sent. Share the link manually.' };
+  }
+
   return {
     candidateId: updated.id,
     accessToken: token,
-    link: buildLink(token),
+    link,
     linkGeneratedAt: updated.linkGeneratedAt,
+    emailSent: email.status === 'SENT',
+    emailStatus: email.status,
+    emailMessage: email.message,
   };
 }
 

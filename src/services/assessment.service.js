@@ -389,7 +389,85 @@ async function getBlueprint(id) {
   return { blueprintGeneratedAt: meta.blueprintGeneratedAt, sections };
 }
 
-// --- Lifecycle (unchanged) --------------------------------------------------
+// --- Publish readiness -------------------------------------------------------
+
+const isBlank = (v) => typeof v !== 'string' || !v.trim();
+const isPositive = (v) => typeof v === 'number' && Number.isFinite(v) && v > 0;
+const isFilledList = (v) => Array.isArray(v) && v.length > 0;
+
+/// Everything that must be in place before an assessment can go live. Returns
+/// a list of { check, message } problems (empty = ready) so HR sees all of them
+/// at once instead of fixing one per attempt.
+async function getPublishBlockers(a) {
+  const id = a.id;
+  const [totalQuestions, pendingQuestions, readingTask, speakingTask] = await Promise.all([
+    prisma.assessmentQuestion.count({ where: { assessmentId: id } }),
+    prisma.assessmentQuestion.count({ where: { assessmentId: id, approved: false } }),
+    prisma.assessmentReadingTask.findUnique({ where: { assessmentId: id } }),
+    prisma.assessmentSpeakingTask.findUnique({ where: { assessmentId: id } }),
+  ]);
+
+  const blockers = [];
+  const block = (check, message) => blockers.push({ check, message });
+
+  // 1 + 2. Blueprint generated, and every generated question approved.
+  if (!a.blueprintGeneratedAt || totalQuestions === 0) {
+    block('blueprint', 'Generate the blueprint');
+  } else if (pendingQuestions > 0) {
+    block('questions', `Approve all questions (${pendingQuestions} of ${totalQuestions} still pending)`);
+  }
+
+  // 3. Duration set, and the timer approved.
+  if (!isPositive(a.durationMinutes)) {
+    block('timer', 'Set the assessment duration');
+  } else if (!a.timerApproved) {
+    block('timer', 'Approve the assessment timer');
+  }
+
+  // 4. Reading task set up and approved.
+  if (
+    !readingTask ||
+    isBlank(readingTask.passage) ||
+    !isPositive(readingTask.maxMarks) ||
+    !isPositive(readingTask.readingWindowSeconds)
+  ) {
+    block('readingTask', 'Set up the reading task (passage, max marks and reading window)');
+  } else if (!readingTask.approved) {
+    block('readingTask', 'Approve the reading task');
+  }
+
+  // 5. Speaking task set up and approved.
+  if (
+    !speakingTask ||
+    isBlank(speakingTask.topic) ||
+    !isPositive(speakingTask.maxMarks) ||
+    !isPositive(speakingTask.speakingWindowSeconds)
+  ) {
+    block('speakingTask', 'Set up the speaking task (topic, max marks and speaking window)');
+  } else if (!speakingTask.approved) {
+    block('speakingTask', 'Approve the speaking task');
+  }
+
+  // 6. Assessment access fully configured. eligibilityThreshold may be 0, so
+  // test for null/undefined rather than falsiness; list fields must be non-empty.
+  const missingAccess = [];
+  if (!a.opensAt) missingAccess.push('opensAt');
+  if (!a.closesAt) missingAccess.push('closesAt');
+  if (isBlank(a.timezone)) missingAccess.push('timezone');
+  if (a.eligibilityThreshold === null || a.eligibilityThreshold === undefined) {
+    missingAccess.push('eligibilityThreshold');
+  }
+  if (!isFilledList(a.allowedDeviceTypes)) missingAccess.push('allowedDeviceTypes');
+  if (!isFilledList(a.cities)) missingAccess.push('cities');
+  if (!isFilledList(a.regions)) missingAccess.push('regions');
+  if (missingAccess.length) {
+    block('access', `Complete the access settings: ${missingAccess.join(', ')}`);
+  }
+
+  return blockers;
+}
+
+// --- Lifecycle ---------------------------------------------------------------
 
 async function publish(id, adminId, changeNote) {
   const existing = await findOrThrow(id);
@@ -398,6 +476,14 @@ async function publish(id, adminId, changeNote) {
   }
   if (existing.status === 'PUBLISHED') {
     throw conflict('Assessment is already published');
+  }
+
+  const blockers = await getPublishBlockers(existing);
+  if (blockers.length) {
+    throw conflict(
+      `Assessment is not ready to publish: ${blockers.map((b) => b.message).join('; ')}`,
+      { blockers }
+    );
   }
 
   return prisma.$transaction(async (tx) => {
