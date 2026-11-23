@@ -1,4 +1,6 @@
 const crypto = require('crypto');
+const fs = require('fs/promises');
+const path = require('path');
 const { Prisma } = require('@prisma/client');
 const prisma = require('../lib/prisma');
 const env = require('../config/env');
@@ -395,6 +397,59 @@ async function generateLink(id, candidateId, adminId) {
   };
 }
 
+// --- delete assigned candidate ---------------------------------------------
+
+/// Permanently delete a candidate assignment (irreversible). The database
+/// cascades to the candidate's questions, attempt, answers, progress, incidents,
+/// recordings and contact verification, then the candidate's recording files on
+/// disk are removed. A candidate who has started an attempt holds real results,
+/// so deleting them needs an explicit `force` confirmation.
+async function removeCandidate(id, candidateId, adminId, force = false) {
+  const a = await findAssessment(id);
+  if (a.status === 'ARCHIVED') throw conflict('Restore this assessment before removing candidates');
+
+  const candidate = await prisma.candidate.findFirst({
+    where: { id: candidateId, assessmentId: id },
+    include: { attempt: { select: { state: true } } },
+  });
+  if (!candidate) throw notFound('Candidate not found for this assessment');
+
+  const hasAttempt = !!candidate.attempt;
+  if (hasAttempt && !force) {
+    throw conflict(
+      'This candidate has started the assessment. Deleting them permanently erases their answers, ' +
+        'recordings and evaluation. Repeat the request with ?force=true to confirm.',
+      { requiresForce: true, attemptState: candidate.attempt.state }
+    );
+  }
+
+  // Database first, so a failure here loses nothing. deleteMany (not delete) so a
+  // concurrent double-delete is a clean 404 rather than an unhandled P2025.
+  const { count } = await prisma.candidate.deleteMany({ where: { id: candidateId, assessmentId: id } });
+  if (!count) throw notFound('Candidate not found for this assessment');
+
+  // Minimal audit trail (ids only, no personal data).
+  console.info('[candidate deleted]', {
+    assessmentId: id, candidateId, adminId, hadAttempt: hasAttempt, forced: hasAttempt && !!force,
+  });
+
+  // Recording files live under <media dir>/<candidateId>/... Best effort: the
+  // rows are already gone, so a failure is reported rather than rolled back.
+  let mediaCleanupFailed = false;
+  const baseDirectory = path.resolve(env.candidateMediaDirectory);
+  const candidateDirectory = path.resolve(baseDirectory, String(candidateId));
+  if (candidateDirectory.startsWith(`${baseDirectory}${path.sep}`)) {
+    try {
+      await fs.rm(candidateDirectory, { recursive: true, force: true });
+    } catch (error) {
+      mediaCleanupFailed = true;
+      console.error('[candidate media cleanup failed]', { candidateId, code: error.code || 'UNKNOWN' });
+    }
+  }
+
+  return { candidateId, deleted: true, mediaCleanupFailed };
+}
+
 module.exports = {
   assignCandidate,
   listAllCandidates,
@@ -406,4 +461,5 @@ module.exports = {
   approveCandidateQuestions,
   setTimerApproval,
   generateLink,
+  removeCandidate,
 };

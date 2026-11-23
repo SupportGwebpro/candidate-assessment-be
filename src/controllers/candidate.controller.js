@@ -67,6 +67,13 @@ const streamAttemptRecording = asyncHandler(async (req, res) => {
   res.sendFile(recording.absolutePath);
 });
 
+const remove = asyncHandler(async (req, res) => {
+  const result = await service.removeCandidate(
+    Number(req.params.id), Number(req.params.candidateId), req.admin.id, req.validatedQuery?.force === true
+  );
+  res.json({ data: result });
+});
+
 module.exports = {
   create,
   list,
@@ -79,4 +86,5 @@ module.exports = {
   setTimerApproval,
   generateLink,
   streamAttemptRecording,
+  remove,
 };

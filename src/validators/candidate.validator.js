@@ -23,6 +23,11 @@ const candidateParam = {
     candidateId: z.coerce.number().int().positive('Invalid candidateId'),
   }),
 };
+// DELETE candidate: `force` confirms deleting a candidate who has started an attempt.
+const removeCandidateSchema = {
+  ...candidateParam,
+  query: z.object({ force: boolish.optional() }),
+};
 const candidateQuestionParam = {
   params: z.object({
     id: z.coerce.number().int().positive('Invalid id'),
@@ -124,4 +129,5 @@ module.exports = {
   updateCandidateQuestionSchema,
   timerApprovalSchema,
   listAllCandidatesSchema,
+  removeCandidateSchema,
 };

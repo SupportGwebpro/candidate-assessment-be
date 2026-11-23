@@ -95,8 +95,13 @@ router.patch('/:id/candidates/:candidateId/timer-approval', validate(candv.timer
 // Generate the access link (requires questions + timer approvals)
 router.post('/:id/candidates/:candidateId/link', validate(candv.candidateParam), cand.generateLink);
 
-// NOTE: there is intentionally no DELETE route. Removal is done via archive,
-// which is reversible via restore — no permanent deletion is exposed.
+// Permanently delete an assigned candidate (irreversible). Candidates who have
+// started an attempt need ?force=true.
+router.delete('/:id/candidates/:candidateId', validate(candv.removeCandidateSchema), cand.remove);
+
+// NOTE: assessments are never deleted — removal is done via archive, which is
+// reversible via restore. Only candidate assignments can be permanently deleted
+// (DELETE /:id/candidates/:candidateId above).
 
 // === Blueprint editing & independent approvals ============================
 
