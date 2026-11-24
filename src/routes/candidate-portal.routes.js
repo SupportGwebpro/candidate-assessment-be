@@ -11,11 +11,11 @@ const audioUpload = multer({
   limits: { fileSize: 15 * 1024 * 1024, files: 1 },
 });
 const contactCodeLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000,
-  limit: 5,
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
-  message: { error: { code: 'RATE_LIMITED', message: 'Too many verification code requests. Try again later.' } },
+  message: { error: { code: 'RATE_LIMITED', message: 'Too many verification code requests. Wait 15 minutes before trying again.' } },
 });
 
 router.get('/invitations/:token', validate(v.tokenParam), controller.getInvitation);
