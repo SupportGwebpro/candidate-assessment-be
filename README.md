@@ -262,8 +262,14 @@ rubrics, and HR decisions are not exposed.
 | POST | `/candidate/invitations/:token/submit` | Finalize once and return the candidate receipt |
 | GET | `/candidate/invitations/:token/receipt` | Retrieve the receipt from the original verified browser |
 | GET | `/candidates/:candidateId/attempt/recordings/:kind` | Authenticated HR playback of a retained task recording |
+| GET | `/candidates` | Authenticated, paginated global candidate list with attempt summary |
 | GET | `/assessments/:id/candidates/:candidateId/evaluation` | Authenticated HR review of submitted answers, task recordings, and current evaluation |
 | PUT | `/assessments/:id/candidates/:candidateId/evaluation` | Save HR marks and feedback; finalize the score when all required review is complete |
+
+The global `GET /candidates` response includes an `attempt` object on each list
+item, or `null` if the candidate has not started an attempt. The summary
+includes `id`, `state`, `startedAt`, `deadlineAt`, `submittedAt`,
+`submissionReason`, `score`, `evaluationStatus`, and `evaluatedAt`.
 
 Candidate attempt data is persisted in the `candidate_attempts`,
 `candidate_answers`, `candidate_question_progress`, `candidate_incidents`,

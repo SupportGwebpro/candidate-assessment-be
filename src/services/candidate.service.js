@@ -173,6 +173,19 @@ async function listAllCandidates(filters = {}) {
       include: {
         _count: { select: { questions: true } },
         assessment: { select: { id: true, name: true, role: true, status: true } },
+        attempt: {
+          select: {
+            id: true,
+            state: true,
+            startedAt: true,
+            deadlineAt: true,
+            submittedAt: true,
+            submissionReason: true,
+            score: true,
+            evaluationStatus: true,
+            evaluatedAt: true,
+          },
+        },
       },
       orderBy: { [sortBy]: sortOrder },
       skip: (page - 1) * pageSize,
@@ -182,7 +195,11 @@ async function listAllCandidates(filters = {}) {
   ]);
 
   return {
-    items: rows.map((c) => ({ ...serialize(c), assessment: c.assessment })),
+    items: rows.map((c) => ({
+      ...serialize(c),
+      assessment: c.assessment,
+      attempt: c.attempt,
+    })),
     meta: { page, pageSize, total, totalPages: Math.max(1, Math.ceil(total / pageSize)) },
   };
 }
