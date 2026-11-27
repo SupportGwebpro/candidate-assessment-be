@@ -62,7 +62,7 @@ const env = {
     from: process.env.SMTP_FROM || process.env.SMTP_USER || '',
   },
   candidateMediaDirectory: path.resolve(
-    process.env.CANDIDATE_MEDIA_DIR || path.join(__dirname, '../../private-media/candidates')
+    process.env.CANDIDATE_MEDIA_DIR || path.join(__dirname, '../../../private-media/candidates')
   ),
 };
 
