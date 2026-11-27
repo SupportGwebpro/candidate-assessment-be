@@ -37,7 +37,27 @@ const evaluationBody = {
     { message: 'Task evaluations must not contain duplicate task kinds', path: ['taskEvaluations'] }),
 };
 
+// Optional body: limit AI evaluation to specific written questions (all by default).
+const aiEvaluationBody = {
+  body: z
+    .object({
+      questionIds: z.array(z.coerce.number().int().positive()).min(1).max(100).optional(),
+    })
+    .refine((data) =>
+      !data.questionIds || new Set(data.questionIds).size === data.questionIds.length,
+    { message: 'Question ids must not contain duplicates', path: ['questionIds'] })
+    .default({}),
+};
+
+// Single-question AI evaluation: the question is addressed in the path.
+const aiQuestionParam = {
+  params: evaluationParam.params.extend({
+    questionId: z.coerce.number().int().positive('Invalid question id'),
+  }),
+};
 module.exports = {
   evaluationParam,
   evaluationBody,
+  aiEvaluationBody,
+  aiQuestionParam,
 };

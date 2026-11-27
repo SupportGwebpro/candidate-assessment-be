@@ -83,6 +83,19 @@ router.put(
   evaluation.saveEvaluation
 );
 
+// AI-suggested marks + feedback for written answers (suggest only; nothing is saved)
+router.post(
+  '/:id/candidates/:candidateId/evaluation/ai-suggestions',
+  validate({ ...evaluationValidator.evaluationParam, ...evaluationValidator.aiEvaluationBody }),
+  evaluation.suggestAiEvaluation
+);
+// Same, for a single written question (suggest only; nothing is saved)
+router.post(
+  '/:id/candidates/:candidateId/evaluation/questions/:questionId/ai-suggestion',
+  validate(evaluationValidator.aiQuestionParam),
+  evaluation.suggestAiQuestionEvaluation
+);
+
 // Candidate question review (fresh sets need approval before link generation)
 router.get('/:id/candidates/:candidateId/questions', validate(candv.candidateParam), cand.listQuestions);
 router.patch('/:id/candidates/:candidateId/questions/:cqId', validate(candv.updateCandidateQuestionSchema), cand.updateQuestion);

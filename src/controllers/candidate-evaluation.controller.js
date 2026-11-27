@@ -16,7 +16,23 @@ const saveEvaluation = asyncHandler(async (req, res) => {
   res.json({ data: result });
 });
 
+const suggestAiEvaluation = asyncHandler(async (req, res) => {
+  const result = await service.suggestAiEvaluation(req.params.id, req.params.candidateId, req.body);
+  res.json({ data: result });
+});
+
+const suggestAiQuestionEvaluation = asyncHandler(async (req, res) => {
+  const result = await service.suggestAiQuestionEvaluation(
+    req.params.id,
+    req.params.candidateId,
+    req.params.questionId
+  );
+  res.json({ data: result });
+});
+
 module.exports = {
   getEvaluation,
   saveEvaluation,
+  suggestAiEvaluation,
+  suggestAiQuestionEvaluation,
 };

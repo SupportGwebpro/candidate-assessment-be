@@ -1,5 +1,8 @@
 const prisma = require('../lib/prisma');
-const { notFound, conflict, badRequest } = require('../utils/http');
+const ai = require('./ai.service');
+const { HttpError, notFound, conflict, badRequest } = require('../utils/http');
+
+const AI_EVALUATION_CONCURRENCY = 3;
 
 const attemptInclude = {
   answers: true,
@@ -239,7 +242,75 @@ async function saveEvaluation(assessmentId, candidateId, input, adminId) {
   return getEvaluation(assessmentId, candidateId);
 }
 
+/// AI-suggested marks and feedback for a candidate's written answers. Nothing is
+/// saved: HR reviews the suggestions and stores them through saveEvaluation.
+async function suggestAiEvaluation(assessmentId, candidateId, input) {
+  const candidate = await findEvaluationCandidate(prisma, assessmentId, candidateId);
+  assertSubmitted(candidate);
+
+  const questionById = new Map(candidate.questions.map((question) => [question.id, question]));
+  for (const questionId of input.questionIds || []) {
+    const question = questionById.get(questionId);
+    if (!question) throw badRequest(`Question ${questionId} does not belong to this candidate.`);
+    if (question.type !== 'WRITTEN') throw badRequest('Only written questions can be evaluated by AI.');
+  }
+  const written = candidate.questions.filter((question) =>
+    question.type === 'WRITTEN' && (!input.questionIds || input.questionIds.includes(question.id))
+  );
+  if (!written.length) throw conflict('This candidate has no written questions to evaluate.');
+
+  const answers = new Map(candidate.attempt.answers.map((answer) => [answer.candidateQuestionId, answer.answer]));
+  const suggestions = [];
+  for (let i = 0; i < written.length; i += AI_EVALUATION_CONCURRENCY) {
+    const batch = await Promise.all(written.slice(i, i + AI_EVALUATION_CONCURRENCY).map(async (question) => {
+      const maxMarks = question.marks ?? 1;
+      const answer = (answers.get(question.id) ?? '').trim();
+      if (!answer) {
+        return { questionId: question.id, maxMarks, suggestedMarks: 0, feedback: 'No answer was submitted.', error: null };
+      }
+      try {
+        const result = await ai.evaluateWrittenAnswer({
+          roleTitle: candidate.assessment.role,
+          assessmentName: candidate.assessment.name,
+          sectionName: question.sectionName,
+          prompt: question.prompt,
+          modelAnswer: question.modelAnswer,
+          rubric: question.evaluationRubric,
+          answer,
+          maxMarks,
+        });
+        return { questionId: question.id, maxMarks, suggestedMarks: result.marks, feedback: result.feedback, error: null };
+      } catch (error) {
+        if (error.code === 'AI_NOT_CONFIGURED') throw error;
+        console.error('[ai evaluation failed]', { questionId: question.id, code: error.code || error.name });
+        return {
+          questionId: question.id,
+          maxMarks,
+          suggestedMarks: null,
+          feedback: null,
+          error: 'AI could not evaluate this answer. Try again or evaluate it manually.',
+        };
+      }
+    }));
+    suggestions.push(...batch);
+  }
+
+  return { candidateId: candidate.id, source: ai.useMock() ? 'mock' : 'deepseek', suggestions };
+}
+
+/// AI-suggested marks and feedback for ONE written question. Same rules as
+/// suggestAiEvaluation (nothing is saved); an AI failure is a real error here
+/// because there is no partial result to return.
+async function suggestAiQuestionEvaluation(assessmentId, candidateId, questionId) {
+  const result = await suggestAiEvaluation(assessmentId, candidateId, { questionIds: [questionId] });
+  const { error, ...suggestion } = result.suggestions[0];
+  if (error) throw new HttpError(502, error, 'AI_EVALUATION_FAILED');
+  return { candidateId: result.candidateId, source: result.source, ...suggestion };
+}
+
 module.exports = {
   getEvaluation,
   saveEvaluation,
+  suggestAiEvaluation,
+  suggestAiQuestionEvaluation,
 };
